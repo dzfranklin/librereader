@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MotionScene xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <ConstraintSet android:id="@+id/rest">
+        <Constraint
+            android:id="@+id/topPage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </ConstraintSet>
+
+    <ConstraintSet
+        android:id="@+id/goPrev"
+        app:deriveConstraintsFrom="@id/rest">
+        <Constraint
+            android:id="@+id/topPage"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="30dp"
+            app:layout_constraintEnd_toStartOf="parent"
+            app:layout_constraintWidth_percent="0.7" />
+
+        <Constraint android:id="@+id/bottomPage">
+            <Transform
+                android:scaleX="1.0"
+                android:scaleY="1.0" />
+        </Constraint>
+    </ConstraintSet>
+
+    <ConstraintSet
+        android:id="@+id/goNext"
+        app:deriveConstraintsFrom="@id/rest">
+        <Constraint
+            android:id="@+id/topPage"
+            app:layout_constraintEnd_toStartOf="parent">
+
+            <Transform android:translationZ="50sp" />
+        </Constraint>
+    </ConstraintSet>
+
+    <Transition
+        app:constraintSetEnd="@+id/goPrev"
+        app:constraintSetStart="@+id/rest"
+        app:duration="150">
+
+        <OnSwipe
+            app:dragDirection="dragRight"
+            app:onTouchUp="autoComplete"
+            app:touchAnchorId="@+id/topPage"
+            app:touchAnchorSide="left"
+            app:touchRegionId="@+id/topPage" />
+    </Transition>
+
+    <Transition
+        app:constraintSetEnd="@+id/goNext"
+        app:constraintSetStart="@+id/rest"
+        app:duration="150">
+
+        <OnSwipe
+            app:dragDirection="dragLeft"
+            app:onTouchUp="autoComplete"
+            app:touchAnchorId="@+id/topPage"
+            app:touchAnchorSide="right"
+            app:touchRegionId="@+id/topPage" />
+    </Transition>
+</MotionScene>
