@@ -5,12 +5,16 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
-import org.danielzfranklin.librereader.databinding.FragmentReaderBinding
+import androidx.lifecycle.ViewModelProvider
+import org.danielzfranklin.librereader.R
+import org.danielzfranklin.librereader.databinding.ReaderFragmentBinding
+import java.io.InputStream
 
+@Suppress("unused") // used in fragment_main.xml
 class ReaderFragment : Fragment() {
-    private lateinit var binding: FragmentReaderBinding
-    private val model: ReaderViewModel by activityViewModels()
+    private lateinit var binding: ReaderFragmentBinding
+    private lateinit var model: ReaderViewModel
+    private lateinit var pagesView: ReaderPagesView
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -18,7 +22,19 @@ class ReaderFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         super.onCreateView(inflater, container, savedInstanceState)
-        binding = FragmentReaderBinding.inflate(layoutInflater, container, false)
+        binding = ReaderFragmentBinding.inflate(layoutInflater, container, false)
+        model = ViewModelProvider(
+            this,
+            ReaderViewModel.Factory(getSampleBook())
+        ).get(ReaderViewModel::class.java)
+
+        pagesView = ReaderPagesView(requireContext(), model.book, model.initialPosition)
+        binding.pagesParent.addView(pagesView, binding.pagesParent.layoutParams)
+
         return binding.root
+    }
+
+    private fun getSampleBook(): InputStream {
+        return resources.openRawResource(R.raw.frankenstein_public_domain)
     }
 }

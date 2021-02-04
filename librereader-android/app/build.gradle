@@ -7,7 +7,7 @@ android {
 
     defaultConfig {
         applicationId "org.danielzfranklin.librereader"
-        minSdkVersion 24
+        minSdkVersion 28
         targetSdkVersion 30
         versionCode 1
         versionName "1.0"
@@ -24,10 +24,18 @@ android {
 
     buildFeatures {
         viewBinding true
+        dataBinding true
     }
 
     kotlinOptions {
         jvmTarget = '1.8'
+    }
+}
+
+// for epublib
+repositories {
+    maven {
+        url 'https://github.com/psiegman/mvn-repo/raw/master/releases'
     }
 }
 
@@ -40,10 +48,23 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0'
     implementation 'androidx.fragment:fragment-ktx:1.2.5'
+    implementation 'androidx.viewpager2:viewpager2:1.0.0'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
+
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.4.0"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.4.0"
+
     implementation 'com.jakewharton.timber:timber:4.7.1'
 
+    // epublib
+    implementation('nl.siegmann.epublib:epublib-core:3.1') {
+        exclude group: 'org.slf4j'
+        exclude group: 'xmlpull'
+    }
+    implementation 'org.slf4j:slf4j-android:1.7.25'
+
+    implementation 'me.saket:better-link-movement-method:2.2.0'
 }
