@@ -23,6 +23,10 @@ class BookSection(val title: String, private val contents: Spanned) {
     data class PageDisplayProperties(val width: Int, val height: Int, val paint: TextPaint)
 
     fun paginate(props: PageDisplayProperties): List<Spanned> {
+        if (props.width < 0 || props.height < 0) {
+            return listOf(SpannedString(""))
+        }
+
         val layout = StaticLayout.Builder
             .obtain(contents, 0, contents.length, props.paint, props.width)
             .build()
@@ -38,10 +42,6 @@ class BookSection(val title: String, private val contents: Spanned) {
             val isLastPage = i == layout.lineCount - 1
 
             if (isOverHeight) {
-                if (i == 0) {
-                    throw IllegalStateException("Can't fit a line")
-                }
-
                 val currentEnd = layout.getLineEnd(i - 1)
 
                 pages.add(subSpan(contents, currentStart, currentEnd))

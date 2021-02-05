@@ -2,91 +2,108 @@ package org.danielzfranklin.librereader.ui.reader
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Color
 import android.text.Spanned
+import android.text.SpannedString
 import android.text.TextPaint
 import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.constraintlayout.motion.widget.MotionLayout
-import androidx.constraintlayout.motion.widget.TransitionAdapter
-import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.databinding.ReaderPagesViewBinding
 
-@SuppressLint("ViewConstructor")
+@SuppressLint("ViewConstructor", "ClickableViewAccessibility")
 class ReaderPagesView(
     context: Context,
     private val book: Book,
     private val initialPosition: BookPosition
-) : LinearLayout(context) {
+) : LinearLayout(context), View.OnLayoutChangeListener {
     private val inflater =
         context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
     private val binding = ReaderPagesViewBinding.inflate(inflater, this, true)
 
+    private val pageStyle = PageStyle()
     private lateinit var sectionPages: List<Spanned>
+    private var pageIndex = 0
 
-    private val fontSize = 25f
-    private val padding = 50
+    private val emptySpan = SpannedString("")
+    var nextPage = PageView(context, this, emptySpan, pageStyle, 1f)
+    var prevPage = PageView(context, this, emptySpan, pageStyle, 0f)
+    var currentPage = PageView(context, this, emptySpan, pageStyle, 1f)
 
-    private var page = 0
+    fun turnTo(percent: Float) {
+        currentPage.percentTurned = percent
 
-    private var transitionListener = object : TransitionAdapter() {
-        override fun onTransitionStarted(layout: MotionLayout?, startId: Int, endId: Int) {
-            when (endId) {
-                R.id.goPrev -> setPageText(binding.bottomPage, page - 1)
-                R.id.goNext -> setPageText(binding.bottomPage, page + 1)
+        if (percent <= 0f) {
+            pageIndex++
+
+            val toRecycle = prevPage
+            prevPage = currentPage
+            currentPage = nextPage
+            nextPage = toRecycle.apply {
+                percentTurned = 1f
+                text = sectionPages.getOrNull(pageIndex + 1)
             }
+
+            currentPage.bringToFront()
         }
+    }
 
-        override fun onTransitionCompleted(layout: MotionLayout?, currentId: Int) {
-            if (layout == null) {
-                return
-            }
+    fun beginTurnBack() {
+        pageIndex--
 
-            when (currentId) {
-                R.id.goNext -> page++
-                R.id.goPrev -> page--
-                else -> return
-            }
-
-            // Go to state=rest
-            // (0% of the way in either direction would work)
-            layout.progress = 0f
-            layout.setTransition(R.id.rest, R.id.goNext)
-            setPageText(binding.topPage, page)
+        val toRecycle = nextPage
+        prevPage = toRecycle.apply {
+            percentTurned = 0f
+            text = sectionPages.getOrNull(pageIndex - 1)
         }
+        currentPage = prevPage.apply {
+            percentTurned = 0f
+        }
+        nextPage = currentPage
+
+        currentPage.bringToFront()
+    }
+
+    val gestureDetector = ReaderPagesGestureDetector(context, this)
+
+    init {
+        gestureDetector
     }
 
     init {
-        initializePage(binding.bottomPage)
-        initializePage(binding.topPage)
-
-        val textPaint = binding.bottomPage.paint
-
-        binding.motionLayout.setTransitionListener(transitionListener)
-
-        // Enqueue for when layout is done. See <https://stackoverflow.com/a/24035591>
-        post {
-            sectionPages = computeSectionPages(initialPosition, textPaint)
-            setPageText(binding.topPage, page)
-        }
-
-        propagateCapturedGestures()
+        addOnLayoutChangeListener(this)
     }
 
-    private fun setPageText(view: TextView, pageIndex: Int) {
-        if (pageIndex < 0 || pageIndex >= sectionPages.size) {
-            view.text = "UNLOADED"
-        } else {
-            view.text = sectionPages[pageIndex]
-        }
-    }
+    private val textPaint = binding.measurementDummy.apply {
+        style = pageStyle
+    }.paint
 
-    private fun initializePage(page: TextView) {
-        page.setBackgroundColor(Color.WHITE)
-        page.textSize = fontSize
-        page.setPadding(padding, padding, padding, padding)
-        page.scrollIndicators = 0
+    override fun onLayoutChange(
+        v: View?,
+        left: Int,
+        top: Int,
+        right: Int,
+        bottom: Int,
+        oldLeft: Int,
+        oldTop: Int,
+        oldRight: Int,
+        oldBottom: Int
+    ) {
+        if (left == oldLeft && top == oldTop && right == oldRight && bottom == oldBottom) {
+            return
+        }
+
+        binding.parent.removeAllViews()
+
+        sectionPages = computeSectionPages(initialPosition, textPaint)
+
+        prevPage.text = sectionPages.getOrNull(pageIndex - 1)
+        currentPage.text = sectionPages.getOrNull(pageIndex)
+        nextPage.text = sectionPages.getOrNull(pageIndex + 1)
+
+        binding.parent.addView(prevPage, pageLayoutParams)
+        binding.parent.addView(nextPage, pageLayoutParams)
+        binding.parent.addView(currentPage, pageLayoutParams)
     }
 
     private fun computeSectionPages(pos: BookPosition, textPaint: TextPaint): List<Spanned> {
@@ -96,19 +113,17 @@ class ReaderPagesView(
 
         val section = book.sections[pos.sectionIndex]
         val props = BookSection.PageDisplayProperties(
-            binding.root.width - padding * 2,
-            binding.root.height - padding * 2,
+            binding.root.width - pageStyle.padding * 2,
+            binding.root.height - pageStyle.padding * 2,
             textPaint
         )
         return section.paginate(props)
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    // TextView & MotionLayout are responsible for calling performClick, this shouldn't override
-    private fun propagateCapturedGestures() {
-        // Required to make text selection and motion gestures work at the same time
-        binding.topPage.setOnTouchListener { _, event ->
-            binding.motionLayout.onTouchEvent(event)
-        }
+    companion object {
+        private val pageLayoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
     }
 }
