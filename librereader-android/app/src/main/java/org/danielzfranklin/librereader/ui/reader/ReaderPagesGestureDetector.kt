@@ -6,7 +6,6 @@ import android.view.MotionEvent
 import android.view.View
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import timber.log.Timber
 
 class ReaderPagesGestureDetector(
     context: Context,
@@ -37,7 +36,6 @@ class ReaderPagesGestureDetector(
         private val pageWidth: StateFlow<Float>
     ) : GestureDetector.SimpleOnGestureListener() {
         fun autoComplete() {
-            // TODO: Animate
             when (val currentState = state.value) {
                 is TurnState.TurningBackwards -> {
                     val percent = currentState.percent
