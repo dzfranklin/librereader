@@ -217,6 +217,6 @@ class ReaderPagesView(
             ViewGroup.LayoutParams.MATCH_PARENT
         )
 
-        private val pageAnimationTimePerPercent = 10
+        private val pageAnimationTimePerPercent = 3f
     }
 }
