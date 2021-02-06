@@ -126,6 +126,11 @@ class ReaderPagesView(
         currentPage.setTextIsSelectable(false)
     }
 
+    override fun onWindowVisibilityChanged(visibility: Int) {
+        gestureDetector.onWindowVisibilityChanged(visibility)
+        super.onWindowVisibilityChanged(visibility)
+    }
+
     init {
         addOnLayoutChangeListener(this)
     }
