@@ -53,10 +53,14 @@ class PageView @JvmOverloads constructor(
     var style: PageStyle
         get() = _style
         set(style) {
+            this._style = style
+
             textSize = style.textSize
             setTextColor(style.textColor)
             typeface = style.typeface
             setPadding(style.padding, style.padding, style.padding, style.padding)
+
+            requestLayout()
         }
 
     private var _percentTurned = 1f
@@ -64,7 +68,6 @@ class PageView @JvmOverloads constructor(
         get() = _percentTurned
         set(percent) {
             _percentTurned = percent
-            setTextIsSelectable(percent == 1f)
             invalidate()
             requestLayout()
         }

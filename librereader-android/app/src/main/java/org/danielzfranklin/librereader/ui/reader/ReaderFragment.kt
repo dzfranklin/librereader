@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.databinding.ReaderFragmentBinding
 import java.io.InputStream
@@ -28,7 +29,12 @@ class ReaderFragment : Fragment() {
             ReaderViewModel.Factory(getSampleBook())
         ).get(ReaderViewModel::class.java)
 
-        pagesView = ReaderPagesView(requireContext(), model.book, model.initialPosition)
+        pagesView = ReaderPagesView(
+            requireContext(),
+            lifecycleScope.coroutineContext,
+            model.book,
+            model.initialPosition
+        )
         binding.pagesParent.addView(pagesView, binding.pagesParent.layoutParams)
 
         return binding.root

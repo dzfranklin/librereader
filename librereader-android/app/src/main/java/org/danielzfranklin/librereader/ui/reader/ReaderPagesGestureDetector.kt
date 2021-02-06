@@ -3,52 +3,51 @@ package org.danielzfranklin.librereader.ui.reader
 import android.content.Context
 import android.view.GestureDetector
 import android.view.MotionEvent
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import timber.log.Timber
-import kotlin.math.abs
 
 class ReaderPagesGestureDetector(
     context: Context,
     private val listener: Listener
 ) : GestureDetector(context, listener) {
-    constructor(context: Context, view: ReaderPagesView) : this(context, Listener(view))
+    constructor(
+        context: Context,
+        state: MutableStateFlow<TurnState>,
+        pageWidth: StateFlow<Float>,
+        ) : this(context, Listener(state, pageWidth))
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event?.action == MotionEvent.ACTION_UP) {
-            listener.complete()
+            listener.autoComplete()
         }
 
         return super.onTouchEvent(event)
     }
 
-    class Listener(private val view: ReaderPagesView) : GestureDetector.SimpleOnGestureListener() {
-        var turnedDistance = 0f
-        var inTurnBack = false
-
-        fun complete() {
-            val cutoff = view.currentPage.width / 2
-            val shouldComplete = abs(turnedDistance) > cutoff
-
-            if (inTurnBack) {
-                if (shouldComplete) {
-                    animateToTurn(1f)
-                } else {
-                    animateToTurn(0f)
+    class Listener(
+        private val state: MutableStateFlow<TurnState>,
+        private val pageWidth: StateFlow<Float>
+    ) : GestureDetector.SimpleOnGestureListener() {
+        fun autoComplete() {
+            // TODO: Animate
+            when (val currentState = state.value) {
+                is TurnState.TurningBackwards -> {
+                    if (currentState.percent > .5) {
+                        state.value = TurnState.CompletingTurnBack
+                    } else {
+                        state.value = TurnState.CancellingTurnBack
+                    }
                 }
-            } else {
-                if (shouldComplete) {
-                    animateToTurn(0f)
-                } else {
-                    animateToTurn(1f)
+
+                is TurnState.TurningForwards -> {
+                    if (currentState.percent > 0.5) {
+                        state.value = TurnState.CompletingTurnForward
+                    } else {
+                        state.value = TurnState.CancellingTurnForward
+                    }
                 }
             }
-
-            inTurnBack = false
-            turnedDistance = 0f
-        }
-
-        private fun animateToTurn(percent: Float) {
-            turnedDistance = 0f
-            view.turnTo(percent) // TODO: make this animation
         }
 
         override fun onScroll(
@@ -57,20 +56,30 @@ class ReaderPagesGestureDetector(
             distanceX: Float,
             distanceY: Float
         ): Boolean {
-            turnedDistance += distanceX
-
-            if (turnedDistance == 0f) {
+            if (distanceX == 0f) {
                 return false
             }
 
-            if (turnedDistance > 0) {
-                view.turnTo(1 - turnedDistance / view.currentPage.width)
-            } else if (turnedDistance < 0) {
-                if (!inTurnBack) {
-                    view.beginTurnBack()
-                    inTurnBack = true
+            val deltaPercent = distanceX / pageWidth.value
+
+            when (val prevState = state.value) {
+                is TurnState.TurningForwards -> {
+                    state.value = TurnState.TurningForwards(prevState.percent + deltaPercent)
                 }
-                view.turnTo(abs(turnedDistance) / view.currentPage.width)
+
+                is TurnState.TurningBackwards -> {
+                    state.value = TurnState.TurningBackwards(prevState.percent - deltaPercent)
+                }
+
+                else -> {
+                    if (distanceX > 0) {
+                        state.value = TurnState.BeganTurnForward
+                        state.value = TurnState.TurningForwards(deltaPercent)
+                    } else {
+                        state.value = TurnState.BeganTurnBack
+                        state.value = TurnState.TurningBackwards(-deltaPercent)
+                    }
+                }
             }
 
             return true

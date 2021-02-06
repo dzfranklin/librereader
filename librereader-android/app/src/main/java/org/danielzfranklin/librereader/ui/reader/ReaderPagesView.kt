@@ -9,14 +9,20 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.databinding.ReaderPagesViewBinding
+import kotlin.coroutines.CoroutineContext
 
 @SuppressLint("ViewConstructor", "ClickableViewAccessibility")
 class ReaderPagesView(
     context: Context,
+    override val coroutineContext: CoroutineContext,
     private val book: Book,
     private val initialPosition: BookPosition
-) : LinearLayout(context), View.OnLayoutChangeListener {
+) : LinearLayout(context), View.OnLayoutChangeListener, CoroutineScope {
     private val inflater =
         context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
     private val binding = ReaderPagesViewBinding.inflate(inflater, this, true)
@@ -26,48 +32,98 @@ class ReaderPagesView(
     private var pageIndex = 0
 
     private val emptySpan = SpannedString("")
-    var nextPage = PageView(context, this, emptySpan, pageStyle, 1f)
-    var prevPage = PageView(context, this, emptySpan, pageStyle, 0f)
-    var currentPage = PageView(context, this, emptySpan, pageStyle, 1f)
+    private var nextPage = PageView(context, this, emptySpan, pageStyle, 1f)
+    private var prevPage = PageView(context, this, emptySpan, pageStyle, 0f)
+    private var currentPage = PageView(context, this, emptySpan, pageStyle, 1f)
 
-    fun turnTo(percent: Float) {
-        currentPage.percentTurned = percent
-
-        if (percent <= 0f) {
-            pageIndex++
-
-            val toRecycle = prevPage
-            prevPage = currentPage
-            currentPage = nextPage
-            nextPage = toRecycle.apply {
-                percentTurned = 1f
-                text = sectionPages.getOrNull(pageIndex + 1)
-            }
-
-            currentPage.bringToFront()
-        }
-    }
-
-    fun beginTurnBack() {
-        pageIndex--
-
-        val toRecycle = nextPage
-        prevPage = toRecycle.apply {
-            percentTurned = 0f
-            text = sectionPages.getOrNull(pageIndex - 1)
-        }
-        currentPage = prevPage.apply {
-            percentTurned = 0f
-        }
-        nextPage = currentPage
-
-        currentPage.bringToFront()
-    }
-
-    val gestureDetector = ReaderPagesGestureDetector(context, this)
+    private val turnState = MutableStateFlow<TurnState>(TurnState.Initial)
+    private val pageWidth = MutableStateFlow(0f)
+    val gestureDetector = ReaderPagesGestureDetector(context, turnState, pageWidth)
 
     init {
-        gestureDetector
+        launch {
+            turnState.collect { turn ->
+                when (turn) {
+                    is TurnState.BeganTurnBack -> {
+                        disableSelection()
+
+                        val toRecycle = prevPage
+                        prevPage = nextPage.apply {
+                            percentTurned = 0f
+                            text = sectionPages.getOrNull(pageIndex - 2)
+                        }
+                        nextPage = currentPage.apply {
+                            bringToFront()
+                        }
+                        currentPage = toRecycle.apply {
+                            percentTurned = 0f
+                            bringToFront()
+                        }
+                    }
+
+                    is TurnState.BeganTurnForward -> {
+                        disableSelection()
+                    }
+
+                    is TurnState.TurningBackwards -> {
+                        currentPage.percentTurned = turn.percent
+                    }
+
+                    is TurnState.TurningForwards -> {
+                        currentPage.percentTurned = 1f - turn.percent
+                    }
+
+                    is TurnState.CompletingTurnBack -> {
+                        currentPage.percentTurned = 1f
+                        currentPage.setTextIsSelectable(true)
+                        pageIndex--
+                    }
+
+                    is TurnState.CompletingTurnForward -> {
+                        pageIndex++
+
+                        val toRecycle = prevPage
+                        prevPage = currentPage
+                        currentPage = nextPage.apply {
+                            percentTurned = 1f
+                            setTextIsSelectable(true)
+                            bringToFront()
+                        }
+                        nextPage = toRecycle.apply {
+                            percentTurned = 1f
+                            text = sectionPages.getOrNull(pageIndex + 1)
+                        }
+                    }
+
+                    is TurnState.CancellingTurnBack -> {
+                        val toRecycle = prevPage
+                        prevPage = currentPage.apply {
+                            percentTurned = 0f
+                        }
+                        currentPage = nextPage.apply {
+                            percentTurned = 1f
+                            setTextIsSelectable(true)
+                            bringToFront()
+                        }
+                        nextPage = toRecycle.apply {
+                            percentTurned = 1f
+                            text = sectionPages.getOrNull(pageIndex + 2)
+                        }
+                    }
+
+                    is TurnState.CancellingTurnForward -> {
+                        currentPage.percentTurned = 1f
+                        currentPage.setTextIsSelectable(true)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun disableSelection() {
+        prevPage.setTextIsSelectable(false)
+        nextPage.setTextIsSelectable(false)
+        currentPage.setTextIsSelectable(false)
     }
 
     init {
@@ -104,6 +160,8 @@ class ReaderPagesView(
         binding.parent.addView(prevPage, pageLayoutParams)
         binding.parent.addView(nextPage, pageLayoutParams)
         binding.parent.addView(currentPage, pageLayoutParams)
+
+        pageWidth.value = width.toFloat()
     }
 
     private fun computeSectionPages(pos: BookPosition, textPaint: TextPaint): List<Spanned> {
