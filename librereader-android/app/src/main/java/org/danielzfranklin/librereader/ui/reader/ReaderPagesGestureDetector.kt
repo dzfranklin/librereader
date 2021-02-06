@@ -15,7 +15,7 @@ class ReaderPagesGestureDetector(
     constructor(
         context: Context,
         state: MutableStateFlow<TurnState>,
-        pageWidth: StateFlow<Float>
+        pageWidth: Float
     ) : this(context, Listener(state, pageWidth))
 
     fun onWindowVisibilityChanged(visibility: Int) {
@@ -38,7 +38,7 @@ class ReaderPagesGestureDetector(
 
     class Listener(
         private val state: MutableStateFlow<TurnState>,
-        private val pageWidth: StateFlow<Float>
+        private val pageWidth: Float
     ) : GestureDetector.SimpleOnGestureListener() {
         /**
          * @return If an autocompletion occurred
@@ -112,7 +112,7 @@ class ReaderPagesGestureDetector(
                 return false
             }
 
-            val deltaPercent = distanceX / pageWidth.value
+            val deltaPercent = distanceX / pageWidth
 
             when (val prevState = state.value) {
                 is TurnState.TurningForwards -> {

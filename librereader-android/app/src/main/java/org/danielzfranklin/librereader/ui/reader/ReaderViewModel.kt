@@ -1,29 +1,28 @@
 package org.danielzfranklin.librereader.ui.reader
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
-import java.io.InputStream
+import kotlinx.coroutines.flow.MutableStateFlow
+import org.danielzfranklin.librereader.repo.Repo
+import org.danielzfranklin.librereader.repo.model.BookID
+import org.danielzfranklin.librereader.repo.model.BookPosition
+import org.danielzfranklin.librereader.repo.model.BookStyle
 
-class ReaderViewModel(application: Application, source: InputStream) :
-    AndroidViewModel(application) {
-    class Factory(
-        private val application: Application,
-        private val source: InputStream
-    ) : ViewModelProvider.Factory {
+class ReaderViewModel(val bookId: BookID) : ViewModel() {
+    class Factory(private val bookId: BookID) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-            if (modelClass == ReaderViewModel::javaClass) {
-                throw IllegalArgumentException("Can only create ReaderViewModel")
+            if (modelClass != ReaderViewModel::class.java) {
+                throw IllegalStateException("Factory can only create ReaderViewModel")
             }
-            @Suppress("UNCHECKED_CAST")
-            return ReaderViewModel(application, source) as T
+            return ReaderViewModel(bookId) as T
         }
-
     }
 
-    val book = BookDisplay(getApplication(), source, viewModelScope.coroutineContext)
+    val repo = Repo.get()
 
-    val initialPosition: BookPosition = BookPosition.Position(2, 0)
+    private val book = repo.getBook(bookId)!!
+    val style = book.style
+    val position = book.position
+    val epub = book.epub
 }

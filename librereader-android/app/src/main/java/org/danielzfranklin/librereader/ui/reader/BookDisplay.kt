@@ -1,24 +1,20 @@
 package org.danielzfranklin.librereader.ui.reader
 
 import android.content.Context
-import kotlinx.coroutines.CoroutineScope
-import nl.siegmann.epublib.epub.EpubReader
-import java.io.InputStream
-import kotlin.coroutines.CoroutineContext
+import nl.siegmann.epublib.domain.Book
+import org.danielzfranklin.librereader.repo.model.BookID
 
 class BookDisplay(
     private val context: Context,
-    source: InputStream,
-//    TODO: pageDisplayProperties: PageDisplayProperties,
-    override val coroutineContext: CoroutineContext
-) : CoroutineScope {
-    private val book = EpubReader().readEpub(source)
-
-    val title = book.title ?: "Untitled"
+    val id: BookID,
+    val epub: Book,
+    val pageDisplay: PageDisplay,
+) {
+    val title = epub.title ?: "Untitled"
 
     // TODO: parse and paginate lazily
-    val sections = book.spine.spineReferences
-        .map { BookSectionDisplay.from(context, book, it) }
+    val sections = epub.spine.spineReferences
+        .mapIndexed { index, _ -> BookSectionDisplay(context, this, index) }
 
     val textLength = sections.sumBy { it.textLength }
 }

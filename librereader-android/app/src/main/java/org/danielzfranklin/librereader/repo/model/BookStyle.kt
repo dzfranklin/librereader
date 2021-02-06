@@ -1,4 +1,4 @@
-package org.danielzfranklin.librereader.ui.reader
+package org.danielzfranklin.librereader.repo.model
 
 import android.content.Context
 import android.graphics.Color
@@ -6,7 +6,7 @@ import android.graphics.Typeface
 import android.text.TextPaint
 import android.widget.TextView
 
-data class PageStyle(
+data class BookStyle(
     val textSize: Float = 25f,
     val textColor: Int = Color.BLACK,
     val bgColor: Int = Color.WHITE,

@@ -4,29 +4,59 @@ import android.content.Context
 import android.graphics.ImageDecoder
 import android.graphics.drawable.Drawable
 import android.text.*
-import android.text.style.URLSpan
 import androidx.core.text.toSpannable
 import androidx.core.text.toSpanned
-import nl.siegmann.epublib.domain.Book
-import nl.siegmann.epublib.domain.SpineReference
+import nl.siegmann.epublib.domain.Resources
 import org.xml.sax.XMLReader
 import timber.log.Timber
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
 import java.nio.charset.IllegalCharsetNameException
 import java.nio.charset.UnsupportedCharsetException
+import kotlin.math.max
+import kotlin.math.min
 
 
-class BookSectionDisplay(private val context: Context, val title: String, private val contents: Spanned) {
-    val textLength = contents.length
+class BookSectionDisplay(
+    private val context: Context,
+    private val book: BookDisplay,
+    private val index: Int
+) {
+    private val ref = book.epub.spine.spineReferences[index]
 
-    fun paginate(props: PageDisplayProperties): List<Spanned> {
-        if (props.width < 0 || props.height < 0) {
+    val title
+        get() = ref.resource.title ?: book.title
+
+    private val text = computeText()
+
+    val textLength = text.length
+
+    private var _pages: List<Spanned>? = null
+    val pages: List<Spanned>
+        get() {
+            val cached = _pages
+            return if (cached != null) {
+                cached
+            } else {
+                val computed = computePageSpans()
+                _pages = computed
+                computed
+            }
+        }
+
+    private fun computePageSpans(): List<Spanned> {
+        if (book.pageDisplay.width < 0 || book.pageDisplay.height < 0) {
             return listOf(SpannedString(""))
         }
 
         val layout = StaticLayout.Builder
-            .obtain(contents, 0, contents.length, props.style.toPaint(context), props.width)
+            .obtain(
+                text,
+                0,
+                text.length,
+                book.pageDisplay.style.toPaint(context),
+                book.pageDisplay.width
+            )
             .build()
 
         val pages = mutableListOf<Spanned>()
@@ -36,20 +66,20 @@ class BookSectionDisplay(private val context: Context, val title: String, privat
         for (i in 0 until layout.lineCount) {
             val lineBottom = layout.getLineBottom(i)
 
-            val isOverHeight = lineBottom - heightToCurrent > props.height
+            val isOverHeight = lineBottom - heightToCurrent > book.pageDisplay.height
             val isLastPage = i == layout.lineCount - 1
 
             if (isOverHeight) {
                 val currentEnd = layout.getLineEnd(i - 1)
 
-                pages.add(subSpan(contents, currentStart, currentEnd))
+                pages.add(subSpan(text, currentStart, currentEnd))
 
                 heightToCurrent = layout.getLineBottom(i - 1)
                 currentStart = currentEnd
             } else if (isOverHeight || isLastPage) {
                 val currentEnd = layout.getLineEnd(i)
 
-                pages.add(subSpan(contents, currentStart, currentEnd))
+                pages.add(subSpan(text, currentStart, currentEnd))
 
                 heightToCurrent = lineBottom
                 currentStart = currentEnd
@@ -59,77 +89,50 @@ class BookSectionDisplay(private val context: Context, val title: String, privat
         return pages.toList()
     }
 
-    companion object {
-        fun from(context: Context, book: Book, sectionRef: SpineReference): BookSectionDisplay {
-            val res = sectionRef.resource
+    private fun subSpan(span: Spanned, startIndex: Int, endIndex: Int): Spanned {
+        val chars = span.subSequence(startIndex, endIndex)
+        val spansToCopy = span.getSpans(startIndex, endIndex, Object::class.java)
 
-            val htmlBytes = ByteBuffer.wrap(res.data)
-            val html = findCharset(res.inputEncoding).decode(htmlBytes).toString()
-            val spanned = Html.fromHtml(html, 0, ImageGetter(book), TagHandler())
-            val contents = processSpanned(spanned)
-
-            return BookSectionDisplay(context, res.title ?: book.title, contents)
+        val out = SpannableStringBuilder(chars)
+        for (i in spansToCopy) {
+            val start = max(0, span.getSpanStart(i) - startIndex)
+            val end = min(endIndex - startIndex, span.getSpanEnd(i) - startIndex)
+            out.setSpan(span, start, end, span.getSpanFlags(i))
         }
 
-        private fun subSpan(span: Spanned, startIndex: Int, endIndex: Int): Spanned {
-            val chars = span.subSequence(startIndex, endIndex)
-            val spansToCopy = span.getSpans(startIndex, endIndex, Object::class.java)
+        return out
+    }
 
-            val out = SpannableStringBuilder(chars)
-            for (i in spansToCopy) {
-                out.setSpan(span, span.getSpanStart(i), span.getSpanEnd(i), span.getSpanFlags(i))
-            }
+    private fun computeText(): Spanned {
+        val res = ref.resource
 
-            return out
+        val htmlBytes = ByteBuffer.wrap(res.data)
+        val html = findCharset(res.inputEncoding).decode(htmlBytes).toString()
+
+        return Html.fromHtml(html, 0, ImageGetter(book.epub.resources), TagHandler())
+    }
+
+    private fun findCharset(name: String?): Charset {
+        if (name == null) {
+            return Charsets.UTF_8
         }
 
-        private fun processSpanned(spanned: Spanned): Spanned {
-            val mut = spanned.toSpannable()
-
-            val links = mut.getSpans(0, mut.length, URLSpan::class.java)
-            for (link in links) {
-                val url = link.url
-                val start = mut.getSpanStart(link)
-                val end = mut.getSpanEnd(link)
-
-                if (start == -1 || end == -1) {
-                    throw IllegalStateException("Failed to process link: Not attached")
-                }
-
-                mut.removeSpan(link)
-                mut.setSpan(BookURLSpan(url), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                Timber.i("Processed link for %s", url)
-            }
-
-            return mut.toSpanned()
-        }
-
-        private fun drawableFromBytes(bytes: ByteArray): Drawable {
-            val source = ImageDecoder.createSource(ByteBuffer.wrap(bytes))
-            return ImageDecoder.decodeDrawable(source)
-        }
-
-        private fun findCharset(name: String?): Charset {
-            if (name == null) {
-                return Charsets.UTF_8
-            }
-
-            return try {
-                Charset.forName(name)
-            } catch (e: IllegalCharsetNameException) {
-                Timber.w("Defaulting to UTF-8 because charset `%s` not recognized", name)
-                Charsets.UTF_8
-            } catch (e: UnsupportedCharsetException) {
-                Timber.w("Defaulting to UTF-8 because charset `%s` not supported", name)
-                Charsets.UTF_8
-            }
+        return try {
+            Charset.forName(name)
+        } catch (e: IllegalCharsetNameException) {
+            Timber.w("Defaulting to UTF-8 because charset `%s` not recognized", name)
+            Charsets.UTF_8
+        } catch (e: UnsupportedCharsetException) {
+            Timber.w("Defaulting to UTF-8 because charset `%s` not supported", name)
+            Charsets.UTF_8
         }
     }
 
-    private class ImageGetter(private val book: Book) : Html.ImageGetter {
+    private class ImageGetter(private val resources: Resources) : Html.ImageGetter {
         override fun getDrawable(src: String?): Drawable {
-            val res = book.resources.getByHref(src)
-            return drawableFromBytes(res.data)
+            val res = resources.getByHref(src)
+            val source = ImageDecoder.createSource(ByteBuffer.wrap(res.data))
+            return ImageDecoder.decodeDrawable(source)
         }
     }
 

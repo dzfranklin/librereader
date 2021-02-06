@@ -6,11 +6,11 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
-import android.text.Spanned
 import android.util.AttributeSet
 import android.view.MotionEvent
 import androidx.core.graphics.withClip
 import androidx.core.graphics.withTranslation
+import org.danielzfranklin.librereader.repo.model.BookStyle
 import kotlin.math.round
 
 class PageView @JvmOverloads constructor(
@@ -18,24 +18,7 @@ class PageView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : androidx.appcompat.widget.AppCompatTextView(context, attrs, defStyleAttr) {
-    private var manager: ReaderPagesView? = null
-
-    constructor(
-        context: Context,
-        manager: ReaderPagesView,
-        text: Spanned,
-        style: PageStyle,
-        percentTurned: Float
-    ) : this(context) {
-        this.style = style
-        this.text = text
-        this.manager = manager
-
-        // don't set this if already set to default to avoid redraw
-        if (percentTurned != this.percentTurned) {
-            this.percentTurned = percentTurned
-        }
-    }
+    var manager: ReaderPagesView? = null
 
     init {
         focusable = FOCUSABLE
@@ -49,8 +32,8 @@ class PageView @JvmOverloads constructor(
         return super.onTouchEvent(event)
     }
 
-    private var _style: PageStyle = PageStyle()
-    var style: PageStyle
+    private var _style: BookStyle = BookStyle()
+    var style: BookStyle
         get() = _style
         set(style) {
             this._style = style
@@ -61,9 +44,11 @@ class PageView @JvmOverloads constructor(
     var percentTurned: Float
         get() = _percentTurned
         set(percent) {
-            _percentTurned = percent
-            invalidate()
-            requestLayout()
+            if (_percentTurned != percent) {
+                _percentTurned = percent
+                invalidate()
+                requestLayout()
+            }
         }
 
     private val edgeWidth = 4
