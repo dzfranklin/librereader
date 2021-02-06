@@ -14,8 +14,8 @@ class ReaderPagesGestureDetector(
     constructor(
         context: Context,
         state: MutableStateFlow<TurnState>,
-        pageWidth: StateFlow<Float>,
-        ) : this(context, Listener(state, pageWidth))
+        pageWidth: StateFlow<Float>
+    ) : this(context, Listener(state, pageWidth))
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event?.action == MotionEvent.ACTION_UP) {
