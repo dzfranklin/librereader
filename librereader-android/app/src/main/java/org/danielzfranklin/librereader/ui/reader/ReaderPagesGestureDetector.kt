@@ -6,6 +6,7 @@ import android.view.MotionEvent
 import android.view.View
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.math.abs
 
 class ReaderPagesGestureDetector(
     context: Context,
@@ -24,19 +25,26 @@ class ReaderPagesGestureDetector(
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (event?.action == MotionEvent.ACTION_UP) {
-            listener.autoComplete()
+        if (super.onTouchEvent(event)) {
+            return true
         }
 
-        return super.onTouchEvent(event)
+        if (event?.action == MotionEvent.ACTION_UP) {
+            return listener.autoComplete()
+        }
+
+        return false
     }
 
     class Listener(
         private val state: MutableStateFlow<TurnState>,
         private val pageWidth: StateFlow<Float>
     ) : GestureDetector.SimpleOnGestureListener() {
-        fun autoComplete() {
-            when (val currentState = state.value) {
+        /**
+         * @return If an autocompletion occurred
+         */
+        fun autoComplete(): Boolean {
+            return when (val currentState = state.value) {
                 is TurnState.TurningBackwards -> {
                     val percent = currentState.percent
                     if (percent > .5f) {
@@ -44,6 +52,7 @@ class ReaderPagesGestureDetector(
                     } else {
                         state.value = TurnState.CancellingTurnBack(percent)
                     }
+                    true
                 }
 
                 is TurnState.TurningForwards -> {
@@ -53,8 +62,44 @@ class ReaderPagesGestureDetector(
                     } else {
                         state.value = TurnState.CancellingTurnForward(percent)
                     }
+                    true
+                }
+
+                else -> false
+            }
+        }
+
+        override fun onFling(
+            e1: MotionEvent?,
+            e2: MotionEvent?,
+            velocityX: Float,
+            velocityY: Float
+        ): Boolean {
+            if (abs(velocityX) < 100) {
+                return false
+            }
+
+            when (val prevState = state.value) {
+                is TurnState.TurningForwards -> {
+                    state.value = TurnState.CompletingTurnForward(prevState.percent)
+                }
+
+                is TurnState.TurningBackwards -> {
+                    state.value = TurnState.CompletingTurnBack(prevState.percent)
+                }
+
+                else -> {
+                    if (velocityX < 0) {
+                        state.value = TurnState.BeganTurnForward
+                        state.value = TurnState.CompletingTurnForward(0f)
+                    } else {
+                        state.value = TurnState.BeganTurnBack
+                        state.value = TurnState.CompletingTurnBack(0f)
+                    }
                 }
             }
+
+            return true
         }
 
         override fun onScroll(
