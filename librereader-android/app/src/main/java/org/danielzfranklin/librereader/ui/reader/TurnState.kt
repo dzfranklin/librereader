@@ -17,11 +17,11 @@ sealed class TurnState {
         val percent = clampPercent(percent)
     }
 
-    object CompletingTurnBack : TurnState()
-    object CompletingTurnForward : TurnState()
+    data class CompletingTurnBack(val fromPercent: Float) : TurnState()
+    data class CompletingTurnForward(val fromPercent: Float) : TurnState()
 
-    object CancellingTurnBack : TurnState()
-    object CancellingTurnForward : TurnState()
+    data class CancellingTurnBack(val fromPercent: Float) : TurnState()
+    data class CancellingTurnForward(val fromPercent: Float) : TurnState()
 
     companion object {
         private fun clampPercent(percent: Float): Float {

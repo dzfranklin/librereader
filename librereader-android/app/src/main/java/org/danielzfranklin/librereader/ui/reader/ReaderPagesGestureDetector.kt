@@ -40,18 +40,20 @@ class ReaderPagesGestureDetector(
             // TODO: Animate
             when (val currentState = state.value) {
                 is TurnState.TurningBackwards -> {
-                    if (currentState.percent > .5) {
-                        state.value = TurnState.CompletingTurnBack
+                    val percent = currentState.percent
+                    if (percent > .5f) {
+                        state.value = TurnState.CompletingTurnBack(percent)
                     } else {
-                        state.value = TurnState.CancellingTurnBack
+                        state.value = TurnState.CancellingTurnBack(percent)
                     }
                 }
 
                 is TurnState.TurningForwards -> {
-                    if (currentState.percent > 0.5) {
-                        state.value = TurnState.CompletingTurnForward
+                    val percent = currentState.percent
+                    if (percent > 0.5f) {
+                        state.value = TurnState.CompletingTurnForward(percent)
                     } else {
-                        state.value = TurnState.CancellingTurnForward
+                        state.value = TurnState.CancellingTurnForward(percent)
                     }
                 }
             }

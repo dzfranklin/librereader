@@ -1,5 +1,8 @@
 package org.danielzfranklin.librereader.ui.reader
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.text.Spanned
@@ -15,6 +18,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.databinding.ReaderPagesViewBinding
 import kotlin.coroutines.CoroutineContext
+import kotlin.math.abs
 
 @SuppressLint("ViewConstructor", "ClickableViewAccessibility")
 class ReaderPagesView(
@@ -38,12 +42,13 @@ class ReaderPagesView(
 
     private val turnState = MutableStateFlow<TurnState>(TurnState.Initial)
     private val pageWidth = MutableStateFlow(0f)
-    val gestureDetector = ReaderPagesGestureDetector(context, turnState, pageWidth)
+    val gestureDetector =
+        ReaderPagesGestureDetector(context, turnState, pageWidth)
 
     init {
         launch {
-            turnState.collect { turn ->
-                when (turn) {
+            turnState.collect { state ->
+                when (state) {
                     is TurnState.BeganTurnBack -> {
                         disableSelection()
 
@@ -66,58 +71,81 @@ class ReaderPagesView(
                     }
 
                     is TurnState.TurningBackwards -> {
-                        currentPage.percentTurned = turn.percent
+                        currentPage.percentTurned = state.percent
                     }
 
                     is TurnState.TurningForwards -> {
-                        currentPage.percentTurned = 1f - turn.percent
+                        currentPage.percentTurned = 1f - state.percent
                     }
 
                     is TurnState.CompletingTurnBack -> {
-                        currentPage.percentTurned = 1f
-                        currentPage.setTextIsSelectable(true)
-                        pageIndex--
+                        animateTurn(state.fromPercent, 1f) {
+                            currentPage.percentTurned = 1f
+                            currentPage.setTextIsSelectable(true)
+                            pageIndex--
+                        }
                     }
 
                     is TurnState.CompletingTurnForward -> {
-                        pageIndex++
+                        animateTurn(1 - state.fromPercent, 0f) {
+                            pageIndex++
 
-                        val toRecycle = prevPage
-                        prevPage = currentPage
-                        currentPage = nextPage.apply {
-                            percentTurned = 1f
-                            setTextIsSelectable(true)
-                            bringToFront()
-                        }
-                        nextPage = toRecycle.apply {
-                            percentTurned = 1f
-                            text = sectionPages.getOrNull(pageIndex + 1)
+                            val toRecycle = prevPage
+                            prevPage = currentPage
+                            currentPage = nextPage.apply {
+                                percentTurned = 1f
+                                setTextIsSelectable(true)
+                                bringToFront()
+                            }
+                            nextPage = toRecycle.apply {
+                                percentTurned = 1f
+                                text = sectionPages.getOrNull(pageIndex + 1)
+                            }
                         }
                     }
 
                     is TurnState.CancellingTurnBack -> {
-                        val toRecycle = prevPage
-                        prevPage = currentPage.apply {
-                            percentTurned = 0f
-                        }
-                        currentPage = nextPage.apply {
-                            percentTurned = 1f
-                            setTextIsSelectable(true)
-                            bringToFront()
-                        }
-                        nextPage = toRecycle.apply {
-                            percentTurned = 1f
-                            text = sectionPages.getOrNull(pageIndex + 2)
+                        animateTurn(state.fromPercent, 0f) {
+                            val toRecycle = prevPage
+                            prevPage = currentPage.apply {
+                                percentTurned = 0f
+                            }
+                            currentPage = nextPage.apply {
+                                percentTurned = 1f
+                                setTextIsSelectable(true)
+                                bringToFront()
+                            }
+                            nextPage = toRecycle.apply {
+                                percentTurned = 1f
+                                text = sectionPages.getOrNull(pageIndex + 2)
+                            }
                         }
                     }
 
                     is TurnState.CancellingTurnForward -> {
-                        currentPage.percentTurned = 1f
-                        currentPage.setTextIsSelectable(true)
+                        animateTurn(1 - state.fromPercent, 1f) {
+                            currentPage.percentTurned = 1f
+                            currentPage.setTextIsSelectable(true)
+                        }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Not that from and to are the percent the current page is turned, not the percent the current
+     * turn is complete.
+     */
+    private fun animateTurn(from: Float, to: Float, onEnd: () -> Unit) {
+        val animator = ObjectAnimator.ofFloat(currentPage, "percentTurned", from, to)
+        animator.duration = (pageAnimationTimePerPercent * abs(from - to) * 100).toLong()
+        animator.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator?) {
+                onEnd()
+            }
+        })
+        animator.start()
     }
 
     private fun disableSelection() {
@@ -188,5 +216,7 @@ class ReaderPagesView(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )
+
+        private val pageAnimationTimePerPercent = 10
     }
 }
