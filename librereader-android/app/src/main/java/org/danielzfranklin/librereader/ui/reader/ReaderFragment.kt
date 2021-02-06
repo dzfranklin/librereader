@@ -26,7 +26,7 @@ class ReaderFragment : Fragment() {
         binding = ReaderFragmentBinding.inflate(layoutInflater, container, false)
         model = ViewModelProvider(
             this,
-            ReaderViewModel.Factory(getSampleBook())
+            ReaderViewModel.Factory(requireActivity().application, getSampleBook())
         ).get(ReaderViewModel::class.java)
 
         pagesView = ReaderPagesView(

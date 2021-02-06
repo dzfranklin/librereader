@@ -24,7 +24,7 @@ import kotlin.math.abs
 class ReaderPagesView(
     context: Context,
     override val coroutineContext: CoroutineContext,
-    private val book: Book,
+    private val book: BookDisplay,
     private val initialPosition: BookPosition
 ) : LinearLayout(context), View.OnLayoutChangeListener, CoroutineScope {
     private val inflater =
@@ -163,10 +163,6 @@ class ReaderPagesView(
         addOnLayoutChangeListener(this)
     }
 
-    private val textPaint = binding.measurementDummy.apply {
-        style = pageStyle
-    }.paint
-
     override fun onLayoutChange(
         v: View?,
         left: Int,
@@ -184,7 +180,7 @@ class ReaderPagesView(
 
         binding.parent.removeAllViews()
 
-        sectionPages = computeSectionPages(initialPosition, textPaint)
+        sectionPages = computeSectionPages(initialPosition, pageStyle)
 
         prevPage.text = sectionPages.getOrNull(pageIndex - 1)
         currentPage.text = sectionPages.getOrNull(pageIndex)
@@ -197,16 +193,16 @@ class ReaderPagesView(
         pageWidth.value = width.toFloat()
     }
 
-    private fun computeSectionPages(pos: BookPosition, textPaint: TextPaint): List<Spanned> {
+    private fun computeSectionPages(pos: BookPosition, style: PageStyle): List<Spanned> {
         if (pos !is BookPosition.Position) {
             TODO()
         }
 
         val section = book.sections[pos.sectionIndex]
-        val props = BookSection.PageDisplayProperties(
+        val props = PageDisplayProperties(
             binding.root.width - pageStyle.padding * 2,
             binding.root.height - pageStyle.padding * 2,
-            textPaint
+            style
         )
         return section.paginate(props)
     }

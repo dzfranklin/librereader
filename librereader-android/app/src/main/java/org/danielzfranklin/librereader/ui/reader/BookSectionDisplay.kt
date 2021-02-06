@@ -1,7 +1,7 @@
 package org.danielzfranklin.librereader.ui.reader
 
+import android.content.Context
 import android.graphics.ImageDecoder
-import android.graphics.Paint
 import android.graphics.drawable.Drawable
 import android.text.*
 import android.text.style.URLSpan
@@ -17,10 +17,8 @@ import java.nio.charset.IllegalCharsetNameException
 import java.nio.charset.UnsupportedCharsetException
 
 
-class BookSection(val title: String, private val contents: Spanned) {
+class BookSectionDisplay(private val context: Context, val title: String, private val contents: Spanned) {
     val textLength = contents.length
-
-    data class PageDisplayProperties(val width: Int, val height: Int, val paint: TextPaint)
 
     fun paginate(props: PageDisplayProperties): List<Spanned> {
         if (props.width < 0 || props.height < 0) {
@@ -28,7 +26,7 @@ class BookSection(val title: String, private val contents: Spanned) {
         }
 
         val layout = StaticLayout.Builder
-            .obtain(contents, 0, contents.length, props.paint, props.width)
+            .obtain(contents, 0, contents.length, props.style.toPaint(context), props.width)
             .build()
 
         val pages = mutableListOf<Spanned>()
@@ -62,7 +60,7 @@ class BookSection(val title: String, private val contents: Spanned) {
     }
 
     companion object {
-        fun from(book: Book, sectionRef: SpineReference): BookSection {
+        fun from(context: Context, book: Book, sectionRef: SpineReference): BookSectionDisplay {
             val res = sectionRef.resource
 
             val htmlBytes = ByteBuffer.wrap(res.data)
@@ -70,7 +68,7 @@ class BookSection(val title: String, private val contents: Spanned) {
             val spanned = Html.fromHtml(html, 0, ImageGetter(book), TagHandler())
             val contents = processSpanned(spanned)
 
-            return BookSection(res.title ?: book.title, contents)
+            return BookSectionDisplay(context, res.title ?: book.title, contents)
         }
 
         private fun subSpan(span: Spanned, startIndex: Int, endIndex: Int): Spanned {

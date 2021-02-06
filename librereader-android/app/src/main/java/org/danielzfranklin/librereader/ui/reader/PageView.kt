@@ -54,13 +54,7 @@ class PageView @JvmOverloads constructor(
         get() = _style
         set(style) {
             this._style = style
-
-            textSize = style.textSize
-            setTextColor(style.textColor)
-            typeface = style.typeface
-            setPadding(style.padding, style.padding, style.padding, style.padding)
-
-            requestLayout()
+            style.apply(this)
         }
 
     private var _percentTurned = 1f

@@ -21,7 +21,7 @@ sealed class BookPosition {
             )
         }
 
-        fun toPercent(book: Book): Float {
+        fun toPercent(book: BookDisplay): Float {
             val lengthToSection =
                 (0 until sectionIndex).sumBy { book.sections[it].textLength }
             val lengthToPosition = lengthToSection + charIndex + 1
@@ -29,7 +29,7 @@ sealed class BookPosition {
         }
 
         companion object {
-            fun fromPercent(book: Book, percent: Float): Position {
+            fun fromPercent(book: BookDisplay, percent: Float): Position {
                 if (percent < 0f || percent > 1f) {
                     throw IllegalStateException("Invalid percent $percent")
                 }
