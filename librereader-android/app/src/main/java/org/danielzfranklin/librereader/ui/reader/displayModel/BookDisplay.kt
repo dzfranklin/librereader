@@ -1,4 +1,4 @@
-package org.danielzfranklin.librereader.ui.reader
+package org.danielzfranklin.librereader.ui.reader.displayModel
 
 import android.content.Context
 import nl.siegmann.epublib.domain.Book

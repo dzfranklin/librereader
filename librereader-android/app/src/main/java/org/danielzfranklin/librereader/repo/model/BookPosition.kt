@@ -1,7 +1,7 @@
 package org.danielzfranklin.librereader.repo.model
 
 import android.text.Spanned
-import org.danielzfranklin.librereader.ui.reader.BookDisplay
+import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import kotlin.math.floor
 
 data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: Int) {

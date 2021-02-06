@@ -11,10 +11,12 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import org.danielzfranklin.librereader.LibreReaderApplication
 import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.databinding.ReaderFragmentBinding
 import org.danielzfranklin.librereader.repo.Repo
+import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
+import org.danielzfranklin.librereader.ui.reader.displayModel.PageDisplay
+import org.danielzfranklin.librereader.ui.reader.pagesView.ReaderPagesView
 import timber.log.Timber
 
 @Suppress("unused") // used in fragment_main.xml

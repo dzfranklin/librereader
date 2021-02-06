@@ -1,11 +1,10 @@
-package org.danielzfranklin.librereader.ui.reader
+package org.danielzfranklin.librereader.ui.reader.pagesView
 
 import android.content.Context
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.abs
 
 class ReaderPagesGestureDetector(

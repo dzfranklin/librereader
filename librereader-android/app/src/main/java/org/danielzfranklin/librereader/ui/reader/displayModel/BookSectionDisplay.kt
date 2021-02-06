@@ -1,11 +1,9 @@
-package org.danielzfranklin.librereader.ui.reader
+package org.danielzfranklin.librereader.ui.reader.displayModel
 
 import android.content.Context
 import android.graphics.ImageDecoder
 import android.graphics.drawable.Drawable
 import android.text.*
-import androidx.core.text.toSpannable
-import androidx.core.text.toSpanned
 import nl.siegmann.epublib.domain.Resources
 import org.xml.sax.XMLReader
 import timber.log.Timber

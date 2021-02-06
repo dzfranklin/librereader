@@ -1,4 +1,4 @@
-package org.danielzfranklin.librereader.ui.reader
+package org.danielzfranklin.librereader.ui.reader.pagesView
 
 import android.annotation.SuppressLint
 import android.content.Context

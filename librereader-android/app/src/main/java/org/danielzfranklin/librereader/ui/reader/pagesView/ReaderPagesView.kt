@@ -1,4 +1,4 @@
-package org.danielzfranklin.librereader.ui.reader
+package org.danielzfranklin.librereader.ui.reader.pagesView
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.databinding.ReaderPagesViewBinding
 import org.danielzfranklin.librereader.repo.model.BookPosition
+import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import kotlin.coroutines.CoroutineContext
 import kotlin.math.abs
 

@@ -1,4 +1,4 @@
-package org.danielzfranklin.librereader.ui.reader
+package org.danielzfranklin.librereader.ui.reader.pagesView
 
 import kotlin.math.max
 import kotlin.math.min
