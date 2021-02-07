@@ -143,6 +143,22 @@ class ReaderPagesView(
                 }
             }
         }
+
+        launch {
+            position.collect { position ->
+                if (book.isFirstPage(position)) {
+                    gestureDetector.disableTurnBackwards()
+                } else {
+                    gestureDetector.enableTurnBackwards()
+                }
+
+                if (book.isLastPage(position)) {
+                    gestureDetector.disableTurnForwards()
+                } else {
+                    gestureDetector.enableTurnForwards()
+                }
+            }
+        }
     }
 
     /**

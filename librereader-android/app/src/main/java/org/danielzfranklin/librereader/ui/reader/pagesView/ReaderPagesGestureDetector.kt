@@ -17,6 +17,22 @@ class ReaderPagesGestureDetector(
         pageWidth: Float
     ) : this(context, Listener(state, pageWidth))
 
+    fun enableTurnBackwards() {
+        listener.turnBackwardsEnabled = true
+    }
+
+    fun disableTurnBackwards() {
+        listener.turnBackwardsEnabled = false
+    }
+
+    fun enableTurnForwards() {
+        listener.turnForwardsEnabled = true
+    }
+
+    fun disableTurnForwards() {
+        listener.turnForwardsEnabled = false
+    }
+
     fun onWindowVisibilityChanged(visibility: Int) {
         if (visibility == View.GONE || visibility == View.INVISIBLE) {
             listener.autoComplete()
@@ -39,6 +55,9 @@ class ReaderPagesGestureDetector(
         private val state: MutableStateFlow<TurnState>,
         private val pageWidth: Float
     ) : GestureDetector.SimpleOnGestureListener() {
+        var turnBackwardsEnabled = true
+        var turnForwardsEnabled = true
+
         /**
          * @return If an autocompletion occurred
          */
@@ -80,18 +99,30 @@ class ReaderPagesGestureDetector(
 
             when (val prevState = state.value) {
                 is TurnState.TurningForwards -> {
+                    if (!turnForwardsEnabled) {
+                        return false
+                    }
                     state.value = TurnState.CompletingTurnForward(prevState.percent)
                 }
 
                 is TurnState.TurningBackwards -> {
+                    if (!turnBackwardsEnabled) {
+                        return false
+                    }
                     state.value = TurnState.CompletingTurnBack(prevState.percent)
                 }
 
                 else -> {
                     if (velocityX < 0) {
+                        if (!turnForwardsEnabled) {
+                            return false
+                        }
                         state.value = TurnState.BeganTurnForward
                         state.value = TurnState.CompletingTurnForward(0f)
                     } else {
+                        if (!turnBackwardsEnabled) {
+                            return false
+                        }
                         state.value = TurnState.BeganTurnBack
                         state.value = TurnState.CompletingTurnBack(0f)
                     }
@@ -115,18 +146,30 @@ class ReaderPagesGestureDetector(
 
             when (val prevState = state.value) {
                 is TurnState.TurningForwards -> {
+                    if (!turnForwardsEnabled) {
+                        return false
+                    }
                     state.value = TurnState.TurningForwards(prevState.percent + deltaPercent)
                 }
 
                 is TurnState.TurningBackwards -> {
+                    if (!turnBackwardsEnabled) {
+                        return false
+                    }
                     state.value = TurnState.TurningBackwards(prevState.percent - deltaPercent)
                 }
 
                 else -> {
                     if (distanceX > 0) {
+                        if (!turnForwardsEnabled) {
+                            return false
+                        }
                         state.value = TurnState.BeganTurnForward
                         state.value = TurnState.TurningForwards(deltaPercent)
                     } else {
+                        if (!turnBackwardsEnabled) {
+                            return false
+                        }
                         state.value = TurnState.BeganTurnBack
                         state.value = TurnState.TurningBackwards(-deltaPercent)
                     }
