@@ -170,7 +170,8 @@ class ReaderPagesGestureDetector(
             distanceY: Float
         ): Boolean {
             if (distanceX == 0f) {
-                return false
+                // Cancel vertical scrolls
+                return true
             }
 
             val deltaPercent = distanceX / pageWidth
