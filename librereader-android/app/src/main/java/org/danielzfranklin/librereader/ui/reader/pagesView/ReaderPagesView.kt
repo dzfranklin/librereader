@@ -7,13 +7,13 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.LinearLayout
+import androidx.constraintlayout.widget.ConstraintLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import org.danielzfranklin.librereader.databinding.ReaderPagesViewBinding
 import org.danielzfranklin.librereader.repo.model.BookPosition
+import org.danielzfranklin.librereader.ui.reader.PageView
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import org.danielzfranklin.librereader.util.toInspectString
 import timber.log.Timber
@@ -26,11 +26,7 @@ class ReaderPagesView(
     override val coroutineContext: CoroutineContext,
     private val book: BookDisplay,
     private val position: MutableStateFlow<BookPosition>
-) : LinearLayout(context), CoroutineScope {
-    private val inflater =
-        context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-    private val binding = ReaderPagesViewBinding.inflate(inflater, this, true)
-
+) : ConstraintLayout(context), CoroutineScope {
     private fun createPage(position: BookPosition?, percentTurned: Float) =
         PageView(context).apply {
             style = book.pageDisplay.style
@@ -47,9 +43,9 @@ class ReaderPagesView(
     private var currentPage = createPage(position.value, 1f)
 
     init {
-        binding.parent.addView(prevPage, pageLayoutParams)
-        binding.parent.addView(nextPage, pageLayoutParams)
-        binding.parent.addView(currentPage, pageLayoutParams)
+        addView(prevPage, pageLayoutParams)
+        addView(nextPage, pageLayoutParams)
+        addView(currentPage, pageLayoutParams)
     }
 
     private val turnState = MutableStateFlow<TurnState>(TurnState.Initial)
