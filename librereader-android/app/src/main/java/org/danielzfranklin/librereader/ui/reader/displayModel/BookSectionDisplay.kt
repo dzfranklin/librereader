@@ -30,17 +30,16 @@ class BookSectionDisplay(
     val textLength = text.length
 
     private var _pages: List<Spanned>? = null
-    val pages: List<Spanned>
-        get() {
-            val cached = _pages
-            return if (cached != null) {
-                cached
-            } else {
-                val computed = computePageSpans()
-                _pages = computed
-                computed
-            }
+    fun pages(): List<Spanned> {
+        val cached = _pages
+        return if (cached != null) {
+            cached
+        } else {
+            val computed = computePageSpans()
+            _pages = computed
+            computed
         }
+    }
 
     private fun computePageSpans(): List<Spanned> {
         if (book.pageDisplay.width < 0 || book.pageDisplay.height < 0) {

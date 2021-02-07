@@ -125,7 +125,7 @@ class ReaderPagesView(
                     is TurnState.CancellingTurnBack -> {
                         animateTurn(state.fromPercent, 0f) {
                             val currentPosition = position.value
-                            val sectionPages = book.sections[currentPosition.sectionIndex].pages
+                            val sectionPages = book.sections[currentPosition.sectionIndex].pages()
                             val pageIndex = currentPosition.sectionPageIndex(book)
 
                             val toRecycle = prevPage

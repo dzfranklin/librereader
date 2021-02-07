@@ -9,7 +9,7 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
         var newPage = sectionPageIndex(display) + deltaPages
         var newSectionIndex = sectionIndex
 
-        while (newPage < 0 || newPage > display.sections[newSectionIndex].pages.size - 1) {
+        while (newPage < 0 || newPage > display.sections[newSectionIndex].pages().size - 1) {
             if (newPage < 0) {
                 newSectionIndex--
 
@@ -17,7 +17,7 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
                     return null
                 }
 
-                newPage += display.sections[newSectionIndex].pages.size
+                newPage += display.sections[newSectionIndex].pages().size
             } else {
                 newSectionIndex++
 
@@ -25,11 +25,11 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
                     return null
                 }
 
-                newPage -= display.sections[newSectionIndex - 1].pages.size
+                newPage -= display.sections[newSectionIndex - 1].pages().size
             }
         }
 
-        val newCharIndex = display.sections[newSectionIndex].pages
+        val newCharIndex = display.sections[newSectionIndex].pages()
             .subList(0, newPage).sumBy { it.length }
 
         return BookPosition(id, newSectionIndex, newCharIndex)
@@ -38,7 +38,7 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
     fun page(display: BookDisplay): Spanned {
         var runningIndex = 0
 
-        for (page in display.sections[sectionIndex].pages) {
+        for (page in display.sections[sectionIndex].pages()) {
             runningIndex += page.length
             if (charIndex < runningIndex) {
                 return page
@@ -53,7 +53,7 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
     fun sectionPageIndex(display: BookDisplay): Int {
         var runningIndex = 0
 
-        for ((pageIndex, page) in display.sections[sectionIndex].pages.withIndex()) {
+        for ((pageIndex, page) in display.sections[sectionIndex].pages().withIndex()) {
             runningIndex += page.length
             if (charIndex < runningIndex) {
                 return pageIndex

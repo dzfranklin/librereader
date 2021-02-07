@@ -23,5 +23,5 @@ class BookDisplay(
 
     fun isLastPage(position: BookPosition) =
         position.sectionIndex == sections.size - 1 &&
-                position.sectionPageIndex(this) == sections[position.sectionIndex].pages.size - 1
+                position.sectionPageIndex(this) == sections[position.sectionIndex].pages().size - 1
 }
