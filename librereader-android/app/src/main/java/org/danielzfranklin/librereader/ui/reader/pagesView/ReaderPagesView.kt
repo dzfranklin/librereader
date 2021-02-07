@@ -18,7 +18,7 @@ import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import kotlin.coroutines.CoroutineContext
 import kotlin.math.abs
 
-@SuppressLint("ViewConstructor", "ClickableViewAccessibility")
+@SuppressLint("ViewConstructor")
 class ReaderPagesView(
     context: Context,
     override val coroutineContext: CoroutineContext,
@@ -62,19 +62,6 @@ class ReaderPagesView(
     }
 
     init {
-        binding.tapBack.setOnClickListener {
-            turnState.value = TurnState.BeganTurnBack
-            turnState.value = TurnState.CompletingTurnBack(0f)
-        }
-        binding.tapNext.setOnClickListener {
-            turnState.value = TurnState.BeganTurnForward
-            turnState.value = TurnState.CompletingTurnForward(0f)
-        }
-
-        // Propagate events to the detector
-        binding.tapBack.setOnTouchListener { _, event -> gestureDetector.onTouchEvent(event) }
-        binding.tapNext.setOnTouchListener { _, event -> gestureDetector.onTouchEvent(event) }
-
         launch {
             turnState.collect { state ->
                 when (state) {
@@ -169,18 +156,14 @@ class ReaderPagesView(
             position.collect { position ->
                 if (book.isFirstPage(position)) {
                     gestureDetector.disableTurnBackwards()
-                    binding.tapBack.isEnabled = false
                 } else {
                     gestureDetector.enableTurnBackwards()
-                    binding.tapBack.isEnabled = true
                 }
 
                 if (book.isLastPage(position)) {
                     gestureDetector.disableTurnForwards()
-                    binding.tapNext.isEnabled = false
                 } else {
                     gestureDetector.enableTurnForwards()
-                    binding.tapNext.isEnabled = true
                 }
             }
         }

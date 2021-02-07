@@ -1,6 +1,7 @@
 package org.danielzfranklin.librereader.ui.reader.pagesView
 
 import android.content.Context
+import android.util.DisplayMetrics
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
@@ -15,7 +16,7 @@ class ReaderPagesGestureDetector(
         context: Context,
         state: MutableStateFlow<TurnState>,
         pageWidth: Float
-    ) : this(context, Listener(state, pageWidth))
+    ) : this(context, Listener(state, pageWidth, context.resources.displayMetrics))
 
     fun enableTurnBackwards() {
         listener.turnBackwardsEnabled = true
@@ -53,7 +54,8 @@ class ReaderPagesGestureDetector(
 
     class Listener(
         private val state: MutableStateFlow<TurnState>,
-        private val pageWidth: Float
+        private val pageWidth: Float,
+        private val displayMetrics: DisplayMetrics
     ) : GestureDetector.SimpleOnGestureListener() {
         var turnBackwardsEnabled = true
         var turnForwardsEnabled = true
@@ -87,6 +89,25 @@ class ReaderPagesGestureDetector(
             }
         }
 
+        private val tapBackCutoff = 110 * displayMetrics.density
+        private val tapForwardCutoff = pageWidth - (110 * displayMetrics.density)
+
+        override fun onSingleTapUp(event: MotionEvent?): Boolean {
+            if (event == null) {
+                return false
+            }
+
+            if (turnBackwardsEnabled && event.x < tapBackCutoff) {
+                turnBackward()
+                return true
+            } else if (turnForwardsEnabled && event.x > tapForwardCutoff) {
+                turnForward()
+                return true
+            }
+
+            return false
+        }
+
         override fun onFling(
             e1: MotionEvent?,
             e2: MotionEvent?,
@@ -116,20 +137,30 @@ class ReaderPagesGestureDetector(
                     if (velocityX < 0) {
                         if (!turnForwardsEnabled) {
                             return false
+                        } else {
+                            turnForward()
                         }
-                        state.value = TurnState.BeganTurnForward
-                        state.value = TurnState.CompletingTurnForward(0f)
                     } else {
                         if (!turnBackwardsEnabled) {
                             return false
+                        } else {
+                            turnBackward()
                         }
-                        state.value = TurnState.BeganTurnBack
-                        state.value = TurnState.CompletingTurnBack(0f)
                     }
                 }
             }
 
             return true
+        }
+
+        private fun turnForward() {
+            state.value = TurnState.BeganTurnForward
+            state.value = TurnState.CompletingTurnForward(0f)
+        }
+
+        private fun turnBackward() {
+            state.value = TurnState.BeganTurnBack
+            state.value = TurnState.CompletingTurnBack(0f)
         }
 
         override fun onScroll(
