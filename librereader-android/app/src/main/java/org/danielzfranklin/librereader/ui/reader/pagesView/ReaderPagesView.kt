@@ -53,6 +53,13 @@ class ReaderPagesView(
     private val pageWidth = book.pageDisplay.width
     val gestureDetector = ReaderPagesGestureDetector(context, turnState, pageWidth.toFloat())
 
+    fun jumpTo(newPosition: BookPosition) {
+        prevPage.text = newPosition.movedBy(book, -1)?.page(book)
+        currentPage.text = newPosition.page(book)
+        nextPage.text = newPosition.movedBy(book, 1)?.page(book)
+        position.value = newPosition
+    }
+
     init {
         launch {
             turnState.collect { state ->
