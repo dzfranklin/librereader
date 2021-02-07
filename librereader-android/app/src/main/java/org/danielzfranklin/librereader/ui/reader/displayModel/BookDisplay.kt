@@ -12,7 +12,6 @@ class BookDisplay(
 ) {
     val title = epub.title ?: "Untitled"
 
-    // TODO: parse and paginate lazily
     val sections = epub.spine.spineReferences
         .mapIndexed { index, _ -> BookSectionDisplay(context, this, index) }
 
