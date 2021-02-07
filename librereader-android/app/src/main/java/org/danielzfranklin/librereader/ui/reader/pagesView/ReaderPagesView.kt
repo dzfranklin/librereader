@@ -29,14 +29,15 @@ class ReaderPagesView(
         context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
     private val binding = ReaderPagesViewBinding.inflate(inflater, this, true)
 
-    private fun createPage(position: BookPosition?, percentTurned: Float) = PageView(context).apply {
-        style = book.pageDisplay.style
-        text = position?.page(book)
-        manager = this@ReaderPagesView
-        this.percentTurned = percentTurned
-        width = book.pageDisplay.width
-        height = book.pageDisplay.height
-    }
+    private fun createPage(position: BookPosition?, percentTurned: Float) =
+        PageView(context).apply {
+            style = book.pageDisplay.style
+            text = position?.page(book)
+            manager = this@ReaderPagesView
+            this.percentTurned = percentTurned
+            width = book.pageDisplay.width
+            height = book.pageDisplay.height
+        }
 
     // NOTE: Order of creation matters
     private var prevPage = createPage(position.value.movedBy(book, -1), 0f)
