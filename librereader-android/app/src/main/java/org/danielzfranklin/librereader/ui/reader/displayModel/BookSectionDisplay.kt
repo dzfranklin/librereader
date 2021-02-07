@@ -107,7 +107,12 @@ class BookSectionDisplay(
         val htmlBytes = ByteBuffer.wrap(res.data)
         val html = findCharset(res.inputEncoding).decode(htmlBytes).toString()
 
-        return Html.fromHtml(html, 0, ImageGetter(book.epub.resources), TagHandler())
+        return Html.fromHtml(
+            html,
+            0,
+            ImageGetter(book.epub.resources, book.pageDisplay.width, book.pageDisplay.height),
+            TagHandler()
+        )
     }
 
     private fun findCharset(name: String?): Charset {
@@ -126,11 +131,31 @@ class BookSectionDisplay(
         }
     }
 
-    private class ImageGetter(private val resources: Resources) : Html.ImageGetter {
+    private class ImageGetter(
+        private val resources: Resources,
+        private val maxWidth: Int,
+        private val maxHeight: Int
+    ) : Html.ImageGetter {
         override fun getDrawable(src: String?): Drawable {
             val res = resources.getByHref(src)
             val source = ImageDecoder.createSource(ByteBuffer.wrap(res.data))
-            return ImageDecoder.decodeDrawable(source)
+            val drawable = ImageDecoder.decodeDrawable(source)
+
+            var width = drawable.intrinsicWidth
+            var height = drawable.intrinsicHeight
+
+            if (width > maxWidth) {
+                height = (height.toFloat() * maxWidth.toFloat() / width.toFloat()).toInt()
+                width = maxWidth
+            }
+
+            if (height > maxHeight) {
+                width = (width.toFloat() * maxHeight.toFloat() / height.toFloat()).toInt()
+                height = maxHeight
+            }
+
+            drawable.setBounds(0, 0, width, height)
+            return drawable
         }
     }
 
