@@ -6,7 +6,7 @@ import kotlin.math.floor
 
 data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: Int) {
     fun movedBy(display: BookDisplay, deltaPages: Int): BookPosition? {
-        var newPage = pageIndex(display) + deltaPages
+        var newPage = sectionPageIndex(display) + deltaPages
         var newSectionIndex = sectionIndex
 
         while (newPage < 0 || newPage > display.sections[newSectionIndex].pages.size - 1) {
@@ -50,7 +50,7 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
         )
     }
 
-    fun pageIndex(display: BookDisplay): Int {
+    fun sectionPageIndex(display: BookDisplay): Int {
         var runningIndex = 0
 
         for ((pageIndex, page) in display.sections[sectionIndex].pages.withIndex()) {

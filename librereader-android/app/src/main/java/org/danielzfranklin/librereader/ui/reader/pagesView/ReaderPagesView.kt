@@ -116,7 +116,7 @@ class ReaderPagesView(
                         animateTurn(state.fromPercent, 0f) {
                             val currentPosition = position.value
                             val sectionPages = book.sections[currentPosition.sectionIndex].pages
-                            val pageIndex = currentPosition.pageIndex(book)
+                            val pageIndex = currentPosition.sectionPageIndex(book)
 
                             val toRecycle = prevPage
                             prevPage = currentPage.apply {
