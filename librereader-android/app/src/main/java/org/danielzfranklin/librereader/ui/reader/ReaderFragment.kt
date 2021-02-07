@@ -15,7 +15,7 @@ import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.databinding.ReaderFragmentBinding
 import org.danielzfranklin.librereader.repo.Repo
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
-import org.danielzfranklin.librereader.ui.reader.displayModel.PageDisplay
+import org.danielzfranklin.librereader.ui.reader.displayModel.BookPageDisplay
 import org.danielzfranklin.librereader.ui.reader.pagesView.ReaderPagesView
 import timber.log.Timber
 
@@ -90,7 +90,7 @@ class ReaderFragment : Fragment(), View.OnLayoutChangeListener {
             binding.pagesParent.removeView(pagesView)
         }
 
-        val pageDisplay = PageDisplay.fitParent(binding.pagesParent, model.style.value)
+        val pageDisplay = BookPageDisplay.fitParent(binding.pagesParent, model.style.value)
 
         val book = BookDisplay(requireContext(), model.bookId, model.epub, pageDisplay)
 

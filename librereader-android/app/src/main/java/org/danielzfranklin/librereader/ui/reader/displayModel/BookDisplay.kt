@@ -9,7 +9,7 @@ class BookDisplay(
     private val context: Context,
     val id: BookID,
     val epub: Book,
-    val pageDisplay: PageDisplay,
+    val pageDisplay: BookPageDisplay,
 ) {
     val title = epub.title ?: "Untitled"
 
