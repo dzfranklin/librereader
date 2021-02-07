@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">LibreReader</string>
+    <string name="next_page">Next page</string>
+    <string name="prev_page">Previous page</string>
 </resources>

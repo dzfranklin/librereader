@@ -7,4 +7,8 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <style name="InvisibleButton" parent="android:Widget">
+        <item name="android:clickable">true</item>
+        <item name="android:background">@color/colorTransparent</item>
+    </style>
 </resources>
