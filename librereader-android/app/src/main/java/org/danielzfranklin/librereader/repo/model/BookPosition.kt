@@ -80,12 +80,13 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
 
             val targetLength = floor(book.textLength.toFloat() * percent).toInt()
 
-            val runningLength = 0
+            var runningLength = 0
             for ((sectionIndex, section) in book.sections.withIndex()) {
                 if (runningLength + section.textLength >= targetLength) {
-                    val charIndex = targetLength - runningLength
+                    val charIndex = targetLength - runningLength - 1
                     return BookPosition(book.id, sectionIndex, charIndex)
                 }
+                runningLength += section.textLength
             }
 
             throw IllegalStateException(
