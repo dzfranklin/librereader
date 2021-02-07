@@ -15,6 +15,8 @@ import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.databinding.ReaderPagesViewBinding
 import org.danielzfranklin.librereader.repo.model.BookPosition
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
+import org.danielzfranklin.librereader.util.toInspectString
+import timber.log.Timber
 import kotlin.coroutines.CoroutineContext
 import kotlin.math.abs
 
@@ -154,6 +156,8 @@ class ReaderPagesView(
 
         launch {
             position.collect { position ->
+                Timber.d(position.page(book).toInspectString())
+
                 if (book.isFirstPage(position)) {
                     gestureDetector.disableTurnBackwards()
                 } else {
