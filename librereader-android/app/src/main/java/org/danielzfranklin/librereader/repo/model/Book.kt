@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import nl.siegmann.epublib.domain.Book
 
 data class Book(
-    val style: MutableStateFlow<BookStyle>,
-    val position: MutableStateFlow<BookPosition>,
+    val style: BookStyle,
+    val position: BookPosition,
     val epub: Book
 )

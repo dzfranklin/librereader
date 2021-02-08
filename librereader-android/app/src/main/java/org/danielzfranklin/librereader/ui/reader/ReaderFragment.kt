@@ -16,15 +16,14 @@ import org.danielzfranklin.librereader.databinding.ReaderFragmentBinding
 import org.danielzfranklin.librereader.repo.Repo
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookPageDisplay
-import org.danielzfranklin.librereader.ui.reader.pagesView.ReaderPagesView
+import org.danielzfranklin.librereader.ui.reader.overviewView.OverviewView
+import org.danielzfranklin.librereader.ui.reader.pagesView.PagesView
 import timber.log.Timber
 
 @Suppress("unused") // used in fragment_main.xml
 class ReaderFragment : Fragment(), View.OnLayoutChangeListener {
     private lateinit var binding: ReaderFragmentBinding
     private lateinit var model: ReaderViewModel
-
-    private var pagesView: ReaderPagesView? = null
 
     private var rootLaidOut = false
 
@@ -55,7 +54,7 @@ class ReaderFragment : Fragment(), View.OnLayoutChangeListener {
         lifecycleScope.launch {
             model.style.collect {
                 if (rootLaidOut) {
-                    recreatePagesView()
+                    recreateViews()
                 } else {
                     Timber.i("Skipping recreating pages view because onLayoutChange will do so later")
                 }
@@ -82,25 +81,41 @@ class ReaderFragment : Fragment(), View.OnLayoutChangeListener {
             return
         }
 
-        recreatePagesView()
+        recreateViews()
     }
 
-    private fun recreatePagesView() {
-        if (pagesView != null) {
-            binding.pagesParent.removeView(pagesView)
-        }
+    private fun recreateViews() {
+        binding.parent.removeAllViews()
 
-        val pageDisplay = BookPageDisplay.fitParent(binding.pagesParent, model.style.value)
+        val pageDisplay = BookPageDisplay.fitParent(binding.parent, model.style.value)
 
         val book = BookDisplay(requireContext(), model.bookId, model.epub, pageDisplay)
 
-        pagesView = ReaderPagesView(
-            requireContext(),
-            lifecycleScope.coroutineContext,
-            book,
-            model.position
+        binding.parent.addView(
+            PagesView(
+                requireContext(),
+                lifecycleScope.coroutineContext,
+                book,
+                model.positionProcessor,
+                model.showOverview
+            ), layoutParams
         )
 
-        binding.pagesParent.addView(pagesView, binding.pagesParent.layoutParams)
+        binding.parent.addView(
+            OverviewView(
+                requireContext(),
+                lifecycleScope.coroutineContext,
+                book,
+                model.positionProcessor,
+                model.showOverview
+            ), layoutParams
+        )
+    }
+
+    companion object {
+        private val layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
     }
 }

@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
-import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.constraintlayout.widget.ConstraintLayout
 import kotlinx.coroutines.CoroutineScope
@@ -14,6 +13,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.repo.model.BookPosition
 import org.danielzfranklin.librereader.ui.reader.PageView
+import org.danielzfranklin.librereader.ui.reader.PositionProcessor
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import org.danielzfranklin.librereader.util.toInspectString
 import timber.log.Timber
@@ -21,26 +21,27 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.math.abs
 
 @SuppressLint("ViewConstructor")
-class ReaderPagesView(
+class PagesView(
     context: Context,
     override val coroutineContext: CoroutineContext,
     private val book: BookDisplay,
-    private val position: MutableStateFlow<BookPosition>
+    private val positionProcessor: PositionProcessor,
+    private val showOverview: MutableStateFlow<Boolean>
 ) : ConstraintLayout(context), CoroutineScope {
     private fun createPage(position: BookPosition?, percentTurned: Float) =
         PageView(context).apply {
             style = book.pageDisplay.style
             text = position?.page(book)
-            manager = this@ReaderPagesView
+            manager = this@PagesView
             this.percentTurned = percentTurned
             width = book.pageDisplay.width
             height = book.pageDisplay.height
         }
 
     // NOTE: Order of creation matters
-    private var prevPage = createPage(position.value.movedBy(book, -1), 0f)
-    private var nextPage = createPage(position.value.movedBy(book, 1), 1f)
-    private var currentPage = createPage(position.value, 1f)
+    private var prevPage = createPage(positionProcessor.position.movedBy(book, -1), 0f)
+    private var nextPage = createPage(positionProcessor.position.movedBy(book, 1), 1f)
+    private var currentPage = createPage(positionProcessor.position, 1f)
 
     init {
         addView(prevPage, pageLayoutParams)
@@ -50,16 +51,20 @@ class ReaderPagesView(
 
     private val turnState = MutableStateFlow<TurnState>(TurnState.Initial)
     private val pageWidth = book.pageDisplay.width
-    val gestureDetector = ReaderPagesGestureDetector(context, turnState, pageWidth.toFloat())
-
-    fun jumpTo(newPosition: BookPosition) {
-        prevPage.text = newPosition.movedBy(book, -1)?.page(book)
-        currentPage.text = newPosition.page(book)
-        nextPage.text = newPosition.movedBy(book, 1)?.page(book)
-        position.value = newPosition
-    }
+    val gestureDetector =
+        PagesGestureDetector(context, turnState, showOverview, pageWidth.toFloat())
 
     init {
+        launch {
+            showOverview.collect {
+                visibility = if (it) {
+                    GONE
+                } else {
+                    VISIBLE
+                }
+            }
+        }
+
         launch {
             turnState.collect { state ->
                 when (state) {
@@ -69,7 +74,7 @@ class ReaderPagesView(
                         val toRecycle = prevPage
                         prevPage = nextPage.apply {
                             percentTurned = 0f
-                            text = position.value.movedBy(book, -2)?.page(book)
+                            text = positionProcessor.position.movedBy(book, -2)?.page(book)
                         }
                         nextPage = currentPage.apply {
                             bringToFront()
@@ -96,13 +101,17 @@ class ReaderPagesView(
                         animateTurn(state.fromPercent, 1f) {
                             currentPage.percentTurned = 1f
                             currentPage.setTextIsSelectable(true)
-                            position.value.movedBy(book, -1)?.let { position.value = it }
+                            positionProcessor.position.movedBy(book, -1)?.let {
+                                positionProcessor.set(this@PagesView, it)
+                            }
                         }
                     }
 
                     is TurnState.CompletingTurnForward -> {
                         animateTurn(1 - state.fromPercent, 0f) {
-                            position.value.movedBy(book, 1)?.let { position.value = it }
+                            positionProcessor.position.movedBy(book, 1)?.let {
+                                positionProcessor.set(this@PagesView, it)
+                            }
 
                             val toRecycle = prevPage
                             prevPage = currentPage
@@ -113,14 +122,14 @@ class ReaderPagesView(
                             }
                             nextPage = toRecycle.apply {
                                 percentTurned = 1f
-                                text = position.value.movedBy(book, 1)?.page(book)
+                                text = positionProcessor.position.movedBy(book, 1)?.page(book)
                             }
                         }
                     }
 
                     is TurnState.CancellingTurnBack -> {
                         animateTurn(state.fromPercent, 0f) {
-                            val currentPosition = position.value
+                            val currentPosition = positionProcessor.position
                             val sectionPages = book.sections[currentPosition.sectionIndex].pages()
                             val pageIndex = currentPosition.sectionPageIndex(book)
 
@@ -151,19 +160,27 @@ class ReaderPagesView(
         }
 
         launch {
-            position.collect { position ->
-                Timber.d(position.page(book).toInspectString())
+            positionProcessor.events.collect {
+                Timber.d(
+                    "Displaying ${it.position}. ${it.position.page(book).toInspectString()}"
+                )
 
-                if (book.isFirstPage(position)) {
+                if (book.isFirstPage(it.position)) {
                     gestureDetector.disableTurnBackwards()
                 } else {
                     gestureDetector.enableTurnBackwards()
                 }
 
-                if (book.isLastPage(position)) {
+                if (book.isLastPage(it.position)) {
                     gestureDetector.disableTurnForwards()
                 } else {
                     gestureDetector.enableTurnForwards()
+                }
+
+                if (it.changer != this@PagesView) {
+                    prevPage.text = it.position.movedBy(book, -1)?.page(book)
+                    currentPage.text = it.position.page(book)
+                    nextPage.text = it.position.movedBy(book, 1)?.page(book)
                 }
             }
         }

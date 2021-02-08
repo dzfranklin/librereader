@@ -2,37 +2,55 @@ package org.danielzfranklin.librereader.repo.model
 
 import android.text.Spanned
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
-import kotlin.math.floor
+import kotlin.math.abs
 
 data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: Int) {
     fun movedBy(display: BookDisplay, deltaPages: Int): BookPosition? {
-        var newPage = sectionPageIndex(display) + deltaPages
-        var newSectionIndex = sectionIndex
+        return when {
+            deltaPages == 0 -> this
+            deltaPages < 0 -> movedDownBy(display, abs(deltaPages))
+            else -> movedUpBy(display, deltaPages)
+        }
+    }
 
-        while (newPage < 0 || newPage > display.sections[newSectionIndex].pages().size - 1) {
-            if (newPage < 0) {
-                newSectionIndex--
+    private fun movedUpBy(display: BookDisplay, count: Int): BookPosition? {
+        val section = display.sections[sectionIndex].pages()
+        val currentPage = sectionPageIndex(display)
 
-                if (newSectionIndex < 0) {
-                    return null
-                }
+        return if (currentPage + count < section.size) {
+            val charIndex = section
+                .subList(0, currentPage + count)
+                .sumBy { it.length }
 
-                newPage += display.sections[newSectionIndex].pages().size
+            BookPosition(display.id, sectionIndex, charIndex)
+        } else {
+            if (sectionIndex >= display.sections.size - 1) {
+                null
             } else {
-                newSectionIndex++
-
-                if (newSectionIndex > display.sections.size - 1) {
-                    return null
-                }
-
-                newPage -= display.sections[newSectionIndex - 1].pages().size
+                startOfSection(display, sectionIndex + 1)
+                    .movedUpBy(display, count - (section.size - currentPage))
             }
         }
+    }
 
-        val newCharIndex = display.sections[newSectionIndex].pages()
-            .subList(0, newPage).sumBy { it.length }
+    private fun movedDownBy(display: BookDisplay, count: Int): BookPosition? {
+        val section = display.sections[sectionIndex]
+        val currentPage = sectionPageIndex(display)
 
-        return BookPosition(id, newSectionIndex, newCharIndex)
+        return if (currentPage - count >= 0) {
+            val charIndex = section.pages()
+                .subList(0, currentPage - count)
+                .sumBy { it.length }
+
+            BookPosition(display.id, sectionIndex, charIndex)
+        } else {
+            if (sectionIndex <= 0) {
+                null
+            } else {
+                endOfSection(display, sectionIndex - 1)
+                    .movedDownBy(display, count - 1 - currentPage)
+            }
+        }
     }
 
     fun page(display: BookDisplay): Spanned {
@@ -51,11 +69,10 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
     }
 
     fun sectionPageIndex(display: BookDisplay): Int {
-        var runningIndex = 0
-
+        var runningIndex = -1
         for ((pageIndex, page) in display.sections[sectionIndex].pages().withIndex()) {
             runningIndex += page.length
-            if (charIndex < runningIndex) {
+            if (charIndex <= runningIndex) {
                 return pageIndex
             }
         }
@@ -65,39 +82,62 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
         )
     }
 
-    fun toPercent(book: BookDisplay): Float {
-        val lengthToSection =
-            (0 until sectionIndex).sumBy { book.sections[it].textLength }
-        val lengthToPosition = lengthToSection + charIndex + 1
-        return lengthToPosition.toFloat() / book.textLength.toFloat()
+    fun pageIndex(display: BookDisplay): Int {
+        var pageIndex = display.sections.subList(0, sectionIndex)
+            .sumBy { it.pages().size }
+
+        var firstCharOnNextPage = 0
+        for (page in display.sections[sectionIndex].pages()) {
+            firstCharOnNextPage += page.length
+            if (charIndex < firstCharOnNextPage) {
+                return pageIndex
+            }
+            pageIndex++
+        }
+
+        throw IllegalStateException("Position outside of book")
+    }
+
+    override fun toString(): String {
+        return "BookPosition $sectionIndex/$charIndex $id"
     }
 
     companion object {
-        fun fromPercent(book: BookDisplay, percent: Float): BookPosition {
-            if (percent < 0f || percent > 1f) {
-                throw IllegalStateException("Invalid percent $percent")
+        /**
+         * @param pageIndex Relative to the start of the book
+         */
+        fun fromPageIndex(book: BookDisplay, pageIndex: Int): BookPosition? {
+            if (pageIndex == 0) {
+                return startOf(book)
             }
 
-            val targetLength = floor(book.textLength.toFloat() * percent).toInt()
-
-            var runningLength = 0
+            var runningIndex = 0
             for ((sectionIndex, section) in book.sections.withIndex()) {
-                if (runningLength + section.textLength >= targetLength) {
-                    val charIndex = targetLength - runningLength - 1
+                val sectionPages = section.pages()
+                if (runningIndex + sectionPages.size - 1 >= pageIndex) {
+                    val charIndex =
+                        sectionPages.subList(0, pageIndex - runningIndex).sumBy { it.length }
                     return BookPosition(book.id, sectionIndex, charIndex)
                 }
-                runningLength += section.textLength
+                runningIndex += sectionPages.size
             }
 
-            throw IllegalStateException(
-                "Unreachable: percent: $percent, targetLength: $targetLength"
-            )
+            return null
         }
 
         fun startOf(book: BookDisplay) = BookPosition(book.id, 0, 0)
 
         fun endOf(book: BookDisplay): BookPosition {
             val sectionIndex = book.sections.size - 1
+            val charIndex = book.sections[sectionIndex].textLength - 1
+            return BookPosition(book.id, sectionIndex, charIndex)
+        }
+
+        fun startOfSection(book: BookDisplay, sectionIndex: Int): BookPosition {
+            return BookPosition(book.id, sectionIndex, 0)
+        }
+
+        fun endOfSection(book: BookDisplay, sectionIndex: Int): BookPosition {
             val charIndex = book.sections[sectionIndex].textLength - 1
             return BookPosition(book.id, sectionIndex, charIndex)
         }

@@ -1,4 +1,4 @@
-package org.danielzfranklin.librereader.ui.reader.pagesView
+package org.danielzfranklin.librereader.ui.reader
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -11,14 +11,16 @@ import android.view.MotionEvent
 import androidx.core.graphics.withClip
 import androidx.core.graphics.withTranslation
 import org.danielzfranklin.librereader.repo.model.BookStyle
+import org.danielzfranklin.librereader.ui.reader.pagesView.PagesView
 import kotlin.math.round
+import kotlin.math.roundToInt
 
-class PageView @JvmOverloads constructor(
+open class PageView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : androidx.appcompat.widget.AppCompatTextView(context, attrs, defStyleAttr) {
-    var manager: ReaderPagesView? = null
+    var manager: PagesView? = null
 
     init {
         focusable = FOCUSABLE
@@ -60,7 +62,7 @@ class PageView @JvmOverloads constructor(
             } else {
                 // convert percent to percent between 70% and 100%
                 val convertedPercent = (1f - percentTurned) / 0.3f
-                round(60f * convertedPercent).toInt()
+                (60f * convertedPercent).roundToInt()
             }
         }
 

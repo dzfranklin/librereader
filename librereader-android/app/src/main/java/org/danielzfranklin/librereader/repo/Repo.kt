@@ -26,7 +26,7 @@ class Repo(private val app: LibreReaderApplication) {
 
         val position = BookPosition(id, 0, 0)
         val style = BookStyle()
-        store[id] = Book(MutableStateFlow(style), MutableStateFlow(position), epub)
+        store[id] = Book(style, position, epub)
 
         return id
     }
