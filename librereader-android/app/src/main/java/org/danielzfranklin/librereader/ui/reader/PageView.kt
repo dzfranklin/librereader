@@ -15,7 +15,7 @@ import org.danielzfranklin.librereader.ui.reader.pagesView.PagesView
 import kotlin.math.round
 import kotlin.math.roundToInt
 
-open class PageView @JvmOverloads constructor(
+class PageView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
