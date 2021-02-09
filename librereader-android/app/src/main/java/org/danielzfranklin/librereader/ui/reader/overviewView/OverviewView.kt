@@ -113,7 +113,7 @@ class OverviewView(
                     return
                 }
 
-                val pageIndex = layoutManager.findFirstVisibleItemPosition()
+                val pageIndex = layoutManager.findFirstCompletelyVisibleItemPosition()
                 if (pageIndex == RecyclerView.NO_POSITION) {
                     return
                 }
