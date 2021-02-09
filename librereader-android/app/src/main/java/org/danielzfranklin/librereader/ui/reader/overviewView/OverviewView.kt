@@ -76,7 +76,7 @@ class OverviewView(
 
         })
 
-        val pagesAdapter = OverviewPagesAdapter(book)
+        val pagesAdapter = OverviewPagesAdapter(binding.pages, book)
         binding.pages.layoutManager = layoutManager
         binding.pages.adapter = pagesAdapter
         LinearSnapHelper().attachToRecyclerView(binding.pages)

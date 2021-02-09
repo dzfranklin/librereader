@@ -11,7 +11,7 @@ import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-class OverviewPagesAdapter(private val book: BookDisplay) :
+class OverviewPagesAdapter(rv: RecyclerView, private val book: BookDisplay) :
     RecyclerView.Adapter<OverviewPagesAdapter.ViewHolder>() {
 
     override fun getItemCount() = book.pageCount()
@@ -19,11 +19,13 @@ class OverviewPagesAdapter(private val book: BookDisplay) :
     private val pageStyle = book.pageDisplay.style
     private val pageWidth = book.pageDisplay.width.toFloat() + pageStyle.padding * 2
     private val pageHeight = book.pageDisplay.height.toFloat() + pageStyle.padding * 2
+    private val scaleFactor = min(
+        (rv.width.toFloat() / pageWidth) * 0.7f,
+        rv.height.toFloat() / pageHeight
+    )
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val scaleFactor = min(
-            (parent.width.toFloat() / pageWidth) * 0.8f,
-            parent.height.toFloat() / pageHeight
+
         )
 
         return ViewHolder(PageView(parent.context).apply {
