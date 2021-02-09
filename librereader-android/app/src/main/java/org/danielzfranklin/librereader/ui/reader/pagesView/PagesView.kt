@@ -31,7 +31,7 @@ class PagesView(
     private fun createPage(position: BookPosition?, percentTurned: Float) =
         PageView(context).apply {
             style = book.pageDisplay.style
-            text = position?.page(book)
+            displaySpan(position?.page(book))
             manager = this@PagesView
             this.percentTurned = percentTurned
             width = book.pageDisplay.width
@@ -74,7 +74,7 @@ class PagesView(
                         val toRecycle = prevPage
                         prevPage = nextPage.apply {
                             percentTurned = 0f
-                            text = positionProcessor.position.movedBy(book, -2)?.page(book)
+                            displaySpan(positionProcessor.position.movedBy(book, -2)?.page(book))
                         }
                         nextPage = currentPage.apply {
                             bringToFront()
@@ -122,7 +122,7 @@ class PagesView(
                             }
                             nextPage = toRecycle.apply {
                                 percentTurned = 1f
-                                text = positionProcessor.position.movedBy(book, 1)?.page(book)
+                                displaySpan(positionProcessor.position.movedBy(book, 1)?.page(book))
                             }
                         }
                     }
@@ -144,7 +144,7 @@ class PagesView(
                             }
                             nextPage = toRecycle.apply {
                                 percentTurned = 1f
-                                text = sectionPages.getOrNull(pageIndex + 2)
+                                displaySpan(sectionPages.getOrNull(pageIndex + 2))
                             }
                         }
                     }
@@ -178,9 +178,9 @@ class PagesView(
                 }
 
                 if (it.changer != this@PagesView) {
-                    prevPage.text = it.position.movedBy(book, -1)?.page(book)
-                    currentPage.text = it.position.page(book)
-                    nextPage.text = it.position.movedBy(book, 1)?.page(book)
+                    prevPage.displaySpan(it.position.movedBy(book, -1)?.page(book))
+                    currentPage.displaySpan(it.position.page(book))
+                    nextPage.displaySpan(it.position.movedBy(book, 1)?.page(book))
                 }
             }
         }

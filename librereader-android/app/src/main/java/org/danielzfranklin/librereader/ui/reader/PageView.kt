@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
+import android.text.Spanned
 import android.util.AttributeSet
 import android.view.MotionEvent
 import androidx.core.graphics.withClip
@@ -32,6 +33,10 @@ class PageView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         manager?.gestureDetector?.onTouchEvent(event)
         return super.onTouchEvent(event)
+    }
+
+    fun displaySpan(span: Spanned?) {
+        text = span?.trimEnd()
     }
 
     private var _style: BookStyle = BookStyle()
