@@ -38,12 +38,12 @@ class PagesView(
             height = book.pageDisplay.height
         }
 
-    // NOTE: Order of creation matters
     private var prevPage = createPage(positionProcessor.position.movedBy(book, -1), 0f)
     private var nextPage = createPage(positionProcessor.position.movedBy(book, 1), 1f)
     private var currentPage = createPage(positionProcessor.position, 1f)
 
     init {
+        // NOTE: Order of adding matters
         addView(prevPage, pageLayoutParams)
         addView(nextPage, pageLayoutParams)
         addView(currentPage, pageLayoutParams)
