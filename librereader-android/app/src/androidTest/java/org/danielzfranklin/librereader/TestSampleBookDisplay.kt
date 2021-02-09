@@ -15,7 +15,7 @@ class TestBookDisplay(context: Context, pageDisplay: BookPageDisplay) :
     ) {
 
     companion object {
-        private val classLoader = TestBookDisplay::class.java.classLoader!!
+        private val classLoader = TestSampleBookDisplay::class.java.classLoader!!
 
         fun loadTestEpub(): Book {
             val stream = classLoader.getResourceAsStream("testbook1.epub")!!
