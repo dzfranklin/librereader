@@ -5,38 +5,46 @@ import android.view.ViewGroup
 import androidx.core.text.toSpannable
 import androidx.core.view.setPadding
 import androidx.recyclerview.widget.RecyclerView
+import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.repo.model.BookPosition
 import org.danielzfranklin.librereader.ui.reader.PageView
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-class OverviewPagesAdapter(rv: RecyclerView, private val book: BookDisplay) :
+class OverviewPagesAdapter(private val book: BookDisplay) :
     RecyclerView.Adapter<OverviewPagesAdapter.ViewHolder>() {
 
     override fun getItemCount() = book.pageCount()
 
-    private val pageStyle = book.pageDisplay.style
-    private val pageWidth = book.pageDisplay.width.toFloat() + pageStyle.padding * 2
-    private val pageHeight = book.pageDisplay.height.toFloat() + pageStyle.padding * 2
-    private val scaleFactor = min(
-        (rv.width.toFloat() / pageWidth) * 0.7f,
-        rv.height.toFloat() / pageHeight
-    )
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-
+        val padding = book.pageDisplay.style.computePaddingPixels(parent.context)
+        val pageWidth = book.pageDisplay.width.toFloat() + padding.toFloat() * 2f
+        val pageHeight = book.pageDisplay.height.toFloat() + padding.toFloat() * 2f
+        val scaleFactor = min(
+            (parent.width.toFloat() / pageWidth) * 0.7f,
+            parent.height.toFloat() / pageHeight
         )
+
+        val scaledWidth = pageWidth * scaleFactor
+        val scaledHeight = pageHeight * scaleFactor
+        val gap = parent.context.resources.getDimension(R.dimen.overviewPageGap).roundToInt()
+        val marginY = ((parent.height.toFloat() - scaledHeight) / 2).roundToInt()
+        val layoutParams = ViewGroup.MarginLayoutParams(
+            scaledWidth.roundToInt(),
+            scaledHeight.roundToInt()
+        ).apply {
+            topMargin = marginY
+            bottomMargin = marginY
+        }
 
         return ViewHolder(PageView(parent.context).apply {
             style = book.pageDisplay.style
-            layoutParams = RecyclerView.LayoutParams(
-                (pageWidth * scaleFactor).roundToInt(),
-                (pageHeight * scaleFactor).roundToInt()
-            )
-            textSize = style.textSize * scaleFactor
-            setPadding((style.padding * scaleFactor).toInt())
-        }, scaleFactor)
+            this.layoutParams = layoutParams
+            textSize = style.computeTextSizePixels(parent.context) * scaleFactor
+            // recompute to avoid rounding twice
+            setPadding((style.computePaddingPixels(parent.context) * scaleFactor).toInt())
+        }, scaleFactor, gap)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, pageIndex: Int) {
@@ -53,8 +61,18 @@ class OverviewPagesAdapter(rv: RecyclerView, private val book: BookDisplay) :
                 bounds.top + height
             )
         }
+        (holder.view.layoutParams as ViewGroup.MarginLayoutParams).apply {
+            marginEnd = holder.gap
+            if (pageIndex == 0) {
+               marginStart = holder.gap
+            }
+        }
         holder.view.displaySpan(text)
     }
 
-    class ViewHolder(val view: PageView, val scaleFactor: Float) : RecyclerView.ViewHolder(view)
+    class ViewHolder(
+        val view: PageView,
+        val scaleFactor: Float,
+        val gap: Int
+    ) : RecyclerView.ViewHolder(view)
 }

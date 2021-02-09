@@ -5,10 +5,13 @@ import org.danielzfranklin.librereader.repo.model.BookStyle
 
 data class BookPageDisplay(val width: Int, val height: Int, val style: BookStyle) {
     companion object {
-        fun fitParent(parent: ViewGroup, style: BookStyle) = BookPageDisplay(
-            parent.width - style.padding * 2,
-            parent.height - style.padding * 2,
-            style
-        )
+        fun fitParent(parent: ViewGroup, style: BookStyle): BookPageDisplay {
+            val padding = style.computePaddingPixels(parent.context)
+            return BookPageDisplay(
+                parent.width - padding * 2,
+                parent.height - padding * 2,
+                style
+            )
+        }
     }
 }

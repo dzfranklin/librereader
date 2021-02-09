@@ -52,7 +52,7 @@ class OverviewView(
     }
 
     private var nextScrollNotUser = false
-    private var layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+    private lateinit var layoutManager: LinearLayoutManager
 
 
     private fun initialize() {
@@ -76,7 +76,8 @@ class OverviewView(
 
         })
 
-        val pagesAdapter = OverviewPagesAdapter(binding.pages, book)
+        val pagesAdapter = OverviewPagesAdapter(book)
+        layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
         binding.pages.layoutManager = layoutManager
         binding.pages.adapter = pagesAdapter
         LinearSnapHelper().attachToRecyclerView(binding.pages)
