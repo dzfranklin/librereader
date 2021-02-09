@@ -93,8 +93,13 @@ class OverviewView(
                         }
 
                         val child = binding.pages.findChildViewUnder(e.x, e.y) ?: return false
-
                         val pageIndex = binding.pages.getChildAdapterPosition(child)
+
+                        if (pageIndex != positionProcessor.position.pageIndex(book)) {
+                            // User tapped one of the pages on the side, not the center page
+                            return false
+                        }
+
                         exitTo(BookPosition.fromPageIndex(book, pageIndex)!!)
 
                         return true
