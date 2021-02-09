@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <dimen name="maxPageTurnShadow">50dp</dimen>
     <dimen name="overviewPageGap">10dp</dimen>
     <dimen name="overviewMinMarginBetweenPagesAndSeeker">16dp</dimen>
     <dimen name="overviewSeekerMarginX">32dp</dimen>

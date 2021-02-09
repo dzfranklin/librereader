@@ -11,6 +11,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import androidx.core.graphics.withClip
 import androidx.core.graphics.withTranslation
+import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.repo.model.BookStyle
 import org.danielzfranklin.librereader.ui.reader.pagesView.PagesView
 import kotlin.math.round
@@ -59,15 +60,16 @@ class PageView @JvmOverloads constructor(
         }
 
     private val edgeWidth = 4
+    private val maxShadowWidth = context.resources.getDimension(R.dimen.maxPageTurnShadow)
     private val edgeShadowWidth: Int
         get() {
-            // Goal: constant 60 until 70%, then linear from 60 to 0 from 70% to 100%
+            // Goal: constant 60 until 70%, then linear from maxShadowWidth to 0 from 70% to 100%
             return if (percentTurned < .7f) {
-                60
+                maxShadowWidth.roundToInt()
             } else {
                 // convert percent to percent between 70% and 100%
                 val convertedPercent = (1f - percentTurned) / 0.3f
-                (60f * convertedPercent).roundToInt()
+                (maxShadowWidth * convertedPercent).roundToInt()
             }
         }
 
