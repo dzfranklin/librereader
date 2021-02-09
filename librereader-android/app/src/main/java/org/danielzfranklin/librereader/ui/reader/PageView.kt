@@ -76,10 +76,19 @@ class PageView @JvmOverloads constructor(
             return
         }
 
-        val edge = (width + edgeWidth + edgeShadowWidth).toFloat() * percentTurned
+        if (percentTurned > 0f) {
+            val edge = (width + edgeWidth + edgeShadowWidth).toFloat() * percentTurned
+            drawText(canvas, edge)
+            drawTurnShadow(canvas, edge)
+        } else {
+            drawText(canvas)
+        }
+    }
 
-        drawText(canvas, edge)
-        drawEdge(canvas, edge)
+    @SuppressLint("WrongCall")
+    private fun drawText(canvas: Canvas) {
+        canvas.drawColor(style.bgColor)
+        super.onDraw(canvas)
     }
 
     // super.draw instead of super.onDraw causes infinite loop. TODO: Investigate?
@@ -106,7 +115,7 @@ class PageView @JvmOverloads constructor(
         mutate()
     }
 
-    private fun drawEdge(canvas: Canvas, edge: Float) {
+    private fun drawTurnShadow(canvas: Canvas, edge: Float) {
         val lineX = round(edge + 1f)
 
         canvas.drawLine(
