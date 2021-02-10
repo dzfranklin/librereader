@@ -177,7 +177,7 @@ class PagesView(
                     gestureDetector.enableTurnForwards()
                 }
 
-                if (it.changer != this@PagesView) {
+                if (it.changer != this@PagesView.hashCode()) {
                     prevPage.displaySpan(it.position.movedBy(book, -1)?.page(book))
                     currentPage.displaySpan(it.position.page(book))
                     nextPage.displaySpan(it.position.movedBy(book, 1)?.page(book))

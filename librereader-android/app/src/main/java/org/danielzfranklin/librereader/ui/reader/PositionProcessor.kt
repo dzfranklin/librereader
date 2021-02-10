@@ -16,13 +16,13 @@ class PositionProcessor(initialValue: BookPosition) {
             return
         }
 
-        if (!_events.tryEmit(Change(changer, position))) {
+        if (!_events.tryEmit(Change(changer.hashCode(), position))) {
             throw IllegalStateException("State flow should never refuse")
         }
     }
 
-    data class Change(val changer: Any, val position: BookPosition)
+    data class Change(val changer: Int, val position: BookPosition)
 
-    private val _events = MutableStateFlow(Change(this, initialValue))
+    private val _events = MutableStateFlow(Change(this.hashCode(), initialValue))
     val events = _events.asStateFlow()
 }

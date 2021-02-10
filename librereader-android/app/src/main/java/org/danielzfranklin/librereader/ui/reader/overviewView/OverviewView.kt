@@ -132,11 +132,11 @@ class OverviewView(
         launch {
             positionProcessor.events.collect {
                 when (it.changer) {
-                    binding.pages -> {
+                    binding.pages.hashCode() -> {
                         updateSeeker(it.position)
                     }
 
-                    binding.seeker -> {
+                    binding.seeker.hashCode() -> {
                         updatePages(it.position)
                     }
 
