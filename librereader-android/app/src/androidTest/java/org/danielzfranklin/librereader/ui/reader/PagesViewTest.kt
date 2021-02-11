@@ -1,5 +1,7 @@
 package org.danielzfranklin.librereader.ui.reader
 
+import android.content.ContentResolver
+import android.net.Uri
 import android.text.Spanned
 import android.view.View
 import android.view.ViewGroup
@@ -11,12 +13,12 @@ import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withTagValue
 import androidx.test.ext.junit.rules.ActivityScenarioRule
-import org.danielzfranklin.librereader.ui.MainActivity
 import org.danielzfranklin.librereader.R
-import org.danielzfranklin.librereader.repo.Repo
+import org.danielzfranklin.librereader.instrumentation
 import org.danielzfranklin.librereader.model.Book
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.model.BookPosition
+import org.danielzfranklin.librereader.repo.Repo
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookPageDisplay
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookSectionDisplay
@@ -29,23 +31,34 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import timber.log.Timber
+import org.danielzfranklin.librereader.test.R as TestR
 
 @RunWith(JUnit4::class)
 class TestPagesView {
-    @get:Rule
-    val activityRule = ActivityScenarioRule(MainActivity::class.java)
-
-    // TODO: when we support launching a specified book, launch this one
-    private val id = BookID("librereaderidv1:a5acbb017c7081216724f86b20ac1eda")
-
+    private lateinit var id: BookID
     private lateinit var repo: Repo
     private lateinit var book: Book
     private lateinit var display: BookDisplay
     private lateinit var sections: List<BookSectionDisplay>
 
+    init {
+        repo = Repo.get()
+        id = repo.importBook(
+            Uri.Builder()
+                .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
+                .authority(instrumentation.context.packageName)
+                .path(TestR.raw.frankenstein_public_domain_partial.toString())
+                .build()
+        )
+//        scenarioRule = ActivityScenarioRule(ReaderActivity.startIntent(instrumentation.targetContext, id))
+    }
+
+    @get:Rule
+    val scenarioRule: ActivityScenarioRule<ReaderActivity> =
+        ActivityScenarioRule(ReaderActivity.startIntent(instrumentation.targetContext, id))
+
     @Before
     fun setUp() {
-        repo = Repo.get()
         book = repo.getBook(id)!!
         display = createDisplay(book)
         sections = display.sections
@@ -53,7 +66,7 @@ class TestPagesView {
 
     @Test
     fun pageNext() {
-        for (sectionIndex in sections.indices.take(3)) {
+        for (sectionIndex in sections.indices) {
             for ((pageIndex, page) in sections[sectionIndex].pages().withIndex()) {
                 Timber.d("On page %s of section %s", pageIndex, sectionIndex)
 
@@ -70,7 +83,7 @@ class TestPagesView {
     fun pagePrev() {
         repo.updatePosition(id, BookPosition.endOf(display))
 
-        for (sectionIndex in sections.indices.reversed().take(3)) {
+        for (sectionIndex in sections.indices.reversed()) {
             for ((pageIndex, page) in sections[sectionIndex].pages().withIndex().reversed()) {
                 Timber.i("Expected page %s of section %s", pageIndex, sectionIndex)
                 Timber.i("Current position %s", book.position.value)
@@ -162,7 +175,7 @@ class TestPagesView {
 
     private fun createDisplay(book: Book): BookDisplay {
         var display: BookDisplay? = null
-        activityRule.scenario.onActivity { activity ->
+        scenarioRule.scenario.onActivity { activity ->
             display = BookDisplay(
                 activity, book.id, book.epub, BookPageDisplay.fitParent(
                     activity.requireViewById<ViewGroup>(R.id.readerLayout),

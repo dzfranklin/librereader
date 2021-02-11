@@ -30,11 +30,13 @@ class ReaderActivity : AppCompatActivity() {
     }
 
     companion object {
-        fun start(context: Context, bookId: BookID) {
-            val intent = Intent(context, ReaderActivity::class.java)
-            intent.putExtra(EXTRA_BOOK_ID, bookId)
-            context.startActivity(intent)
-        }
+        fun start(context: Context, bookId: BookID) =
+            context.startActivity(startIntent(context, bookId))
+
+        fun startIntent(context: Context, bookId: BookID) =
+            Intent(context, ReaderActivity::class.java).apply {
+                putExtra(EXTRA_BOOK_ID, bookId)
+            }
 
         private const val EXTRA_BOOK_ID = "EXTRA_BOOK_ID"
     }
