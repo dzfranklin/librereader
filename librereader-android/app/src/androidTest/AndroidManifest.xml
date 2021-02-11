@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.danielzfranklin.librereader">
+
+    <!--  extractNativeLibs is fix for https://github.com/mockk/mockk/issues/297  -->
+    <application android:extractNativeLibs="true" />
+</manifest>

@@ -6,7 +6,7 @@ import androidx.core.text.toSpannable
 import androidx.core.view.setPadding
 import androidx.recyclerview.widget.RecyclerView
 import org.danielzfranklin.librereader.R
-import org.danielzfranklin.librereader.repo.model.BookPosition
+import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.ui.reader.PageView
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import kotlin.math.min

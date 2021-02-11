@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.databinding.OverviewViewBinding
-import org.danielzfranklin.librereader.repo.model.BookPosition
+import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.ui.reader.PositionProcessor
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import timber.log.Timber

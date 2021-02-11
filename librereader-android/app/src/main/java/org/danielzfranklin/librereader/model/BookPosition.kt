@@ -1,4 +1,4 @@
-package org.danielzfranklin.librereader.repo.model
+package org.danielzfranklin.librereader.model
 
 import android.text.Spanned
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay

@@ -1,7 +1,7 @@
 package org.danielzfranklin.librereader.ui.reader.displayModel
 
 import android.view.ViewGroup
-import org.danielzfranklin.librereader.repo.model.BookStyle
+import org.danielzfranklin.librereader.model.BookStyle
 
 data class BookPageDisplay(val width: Int, val height: Int, val style: BookStyle) {
     companion object {

@@ -1,4 +1,4 @@
-package org.danielzfranklin.librereader.repo.model
+package org.danielzfranklin.librereader.model
 
 import android.content.Context
 import android.graphics.Color

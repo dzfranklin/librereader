@@ -12,7 +12,7 @@ import android.view.MotionEvent
 import androidx.core.graphics.withClip
 import androidx.core.graphics.withTranslation
 import org.danielzfranklin.librereader.R
-import org.danielzfranklin.librereader.repo.model.BookStyle
+import org.danielzfranklin.librereader.model.BookStyle
 import org.danielzfranklin.librereader.ui.reader.pagesView.PagesView
 import kotlin.math.round
 import kotlin.math.roundToInt
@@ -37,7 +37,7 @@ class PageView @JvmOverloads constructor(
     }
 
     fun displaySpan(span: Spanned?) {
-        text = span?.trimEnd()
+        setText(span, BufferType.SPANNABLE)
     }
 
     private var _style: BookStyle = BookStyle()

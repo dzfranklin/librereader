@@ -2,8 +2,8 @@ package org.danielzfranklin.librereader.ui.reader.displayModel
 
 import android.content.Context
 import nl.siegmann.epublib.domain.Book
-import org.danielzfranklin.librereader.repo.model.BookID
-import org.danielzfranklin.librereader.repo.model.BookPosition
+import org.danielzfranklin.librereader.model.BookID
+import org.danielzfranklin.librereader.model.BookPosition
 
 open class BookDisplay(
     private val context: Context,

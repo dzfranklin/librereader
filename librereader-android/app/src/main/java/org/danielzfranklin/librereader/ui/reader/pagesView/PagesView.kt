@@ -11,7 +11,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import org.danielzfranklin.librereader.repo.model.BookPosition
+import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.ui.reader.PageView
 import org.danielzfranklin.librereader.ui.reader.PositionProcessor
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
@@ -38,15 +38,30 @@ class PagesView(
             height = book.pageDisplay.height
         }
 
-    private var prevPage = createPage(positionProcessor.position.movedBy(book, -1), 0f)
-    private var nextPage = createPage(positionProcessor.position.movedBy(book, 1), 1f)
-    private var currentPage = createPage(positionProcessor.position, 1f)
+    private class Pages(val prev: PageView, val next: PageView, val current: PageView) {
+        init {
+            // Useful in testing and in debugging with the layout inspector
+            prev.tag = "prevPage"
+            next.tag = "nextPage"
+            current.tag = "currentPage"
+
+            prev.elevation = 0f
+            next.elevation = 1f
+            current.elevation = 2f
+        }
+    }
+
+    private var pages = Pages(
+        prev = createPage(positionProcessor.position.movedBy(book, -1), 0f),
+        next = createPage(positionProcessor.position.movedBy(book, 1), 1f),
+        current = createPage(positionProcessor.position, 1f)
+    )
 
     init {
         // NOTE: Order of adding matters
-        addView(prevPage, pageLayoutParams)
-        addView(nextPage, pageLayoutParams)
-        addView(currentPage, pageLayoutParams)
+        addView(pages.prev, pageLayoutParams)
+        addView(pages.next, pageLayoutParams)
+        addView(pages.current, pageLayoutParams)
     }
 
     private val turnState = MutableStateFlow<TurnState>(TurnState.Initial)
@@ -71,18 +86,19 @@ class PagesView(
                     is TurnState.BeganTurnBack -> {
                         disableSelection()
 
-                        val toRecycle = prevPage
-                        prevPage = nextPage.apply {
-                            percentTurned = 0f
-                            displaySpan(positionProcessor.position.movedBy(book, -2)?.page(book))
-                        }
-                        nextPage = currentPage.apply {
-                            bringToFront()
-                        }
-                        currentPage = toRecycle.apply {
-                            percentTurned = 0f
-                            bringToFront()
-                        }
+                        pages = Pages(
+                            prev = pages.next.apply {
+                                percentTurned = 0f
+                                displaySpan(
+                                    positionProcessor.position.movedBy(book, -2)?.page(book)
+                                )
+                            },
+                            next = pages.current,
+                            current = pages.prev.apply {
+                                percentTurned = 0f
+                            }
+                        )
+
                     }
 
                     is TurnState.BeganTurnForward -> {
@@ -90,17 +106,17 @@ class PagesView(
                     }
 
                     is TurnState.TurningBackwards -> {
-                        currentPage.percentTurned = state.percent
+                        pages.current.percentTurned = state.percent
                     }
 
                     is TurnState.TurningForwards -> {
-                        currentPage.percentTurned = 1f - state.percent
+                        pages.current.percentTurned = 1f - state.percent
                     }
 
                     is TurnState.CompletingTurnBack -> {
                         animateTurn(state.fromPercent, 1f) {
-                            currentPage.percentTurned = 1f
-                            currentPage.setTextIsSelectable(true)
+                            pages.current.percentTurned = 0f
+                            pages.current.setTextIsSelectable(true)
                             positionProcessor.position.movedBy(book, -1)?.let {
                                 positionProcessor.set(this@PagesView, it)
                             }
@@ -113,17 +129,19 @@ class PagesView(
                                 positionProcessor.set(this@PagesView, it)
                             }
 
-                            val toRecycle = prevPage
-                            prevPage = currentPage
-                            currentPage = nextPage.apply {
-                                percentTurned = 1f
-                                setTextIsSelectable(true)
-                                bringToFront()
-                            }
-                            nextPage = toRecycle.apply {
-                                percentTurned = 1f
-                                displaySpan(positionProcessor.position.movedBy(book, 1)?.page(book))
-                            }
+                            pages = Pages(
+                                prev = pages.current,
+                                next = pages.prev.apply {
+                                    percentTurned = 1f
+                                    displaySpan(
+                                        positionProcessor.position.movedBy(book, 1)?.page(book)
+                                    )
+                                },
+                                current = pages.next.apply {
+                                    percentTurned = 1f
+                                    setTextIsSelectable(true)
+                                }
+                            )
                         }
                     }
 
@@ -133,26 +151,26 @@ class PagesView(
                             val sectionPages = book.sections[currentPosition.sectionIndex].pages()
                             val pageIndex = currentPosition.sectionPageIndex(book)
 
-                            val toRecycle = prevPage
-                            prevPage = currentPage.apply {
-                                percentTurned = 0f
-                            }
-                            currentPage = nextPage.apply {
-                                percentTurned = 1f
-                                setTextIsSelectable(true)
-                                bringToFront()
-                            }
-                            nextPage = toRecycle.apply {
-                                percentTurned = 1f
-                                displaySpan(sectionPages.getOrNull(pageIndex + 2))
-                            }
+                            pages = Pages(
+                                prev = pages.current.apply {
+                                    percentTurned = 0f
+                                },
+                                current = pages.next.apply {
+                                    percentTurned = 1f
+                                    setTextIsSelectable(true)
+                                },
+                                next = pages.prev.apply {
+                                    percentTurned = 1f
+                                    displaySpan(sectionPages.getOrNull(pageIndex + 2))
+                                }
+                            )
                         }
                     }
 
                     is TurnState.CancellingTurnForward -> {
                         animateTurn(1 - state.fromPercent, 1f) {
-                            currentPage.percentTurned = 1f
-                            currentPage.setTextIsSelectable(true)
+                            pages.current.percentTurned = 1f
+                            pages.current.setTextIsSelectable(true)
                         }
                     }
                 }
@@ -178,9 +196,9 @@ class PagesView(
                 }
 
                 if (it.changer != this@PagesView.hashCode()) {
-                    prevPage.displaySpan(it.position.movedBy(book, -1)?.page(book))
-                    currentPage.displaySpan(it.position.page(book))
-                    nextPage.displaySpan(it.position.movedBy(book, 1)?.page(book))
+                    pages.prev.displaySpan(it.position.movedBy(book, -1)?.page(book))
+                    pages.current.displaySpan(it.position.page(book))
+                    pages.next.displaySpan(it.position.movedBy(book, 1)?.page(book))
                 }
             }
         }
@@ -191,7 +209,7 @@ class PagesView(
      * turn is complete.
      */
     private fun animateTurn(from: Float, to: Float, onEnd: () -> Unit) {
-        val animator = ObjectAnimator.ofFloat(currentPage, "percentTurned", from, to)
+        val animator = ObjectAnimator.ofFloat(pages.current, "percentTurned", from, to)
         animator.duration = (pageAnimationTimePerPercent * abs(from - to) * 100).toLong()
         animator.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator?) {
@@ -202,9 +220,9 @@ class PagesView(
     }
 
     private fun disableSelection() {
-        prevPage.setTextIsSelectable(false)
-        nextPage.setTextIsSelectable(false)
-        currentPage.setTextIsSelectable(false)
+        pages.prev.setTextIsSelectable(false)
+        pages.next.setTextIsSelectable(false)
+        pages.current.setTextIsSelectable(false)
     }
 
     override fun onWindowVisibilityChanged(visibility: Int) {

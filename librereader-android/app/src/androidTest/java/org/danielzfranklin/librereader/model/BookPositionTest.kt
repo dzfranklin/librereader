@@ -1,4 +1,4 @@
-package org.danielzfranklin.librereader.repo.model
+package org.danielzfranklin.librereader.model
 
 import androidx.test.espresso.matcher.ViewMatchers.assertThat
 import androidx.test.platform.app.InstrumentationRegistry
