@@ -3,6 +3,7 @@ package org.danielzfranklin.librereader.model
 import androidx.test.espresso.matcher.ViewMatchers.assertThat
 import androidx.test.platform.app.InstrumentationRegistry
 import org.danielzfranklin.librereader.TestSampleBookDisplay
+import org.danielzfranklin.librereader.instrumentation
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookPageDisplay
 import org.hamcrest.CoreMatchers.`is`
@@ -25,7 +26,7 @@ internal class BookPositionTest {
             style = BookStyle()
         )
 
-        val context = InstrumentationRegistry.getInstrumentation().context
+        val context = instrumentation.context
         display = TestSampleBookDisplay(context, pageDisplay)
     }
 
