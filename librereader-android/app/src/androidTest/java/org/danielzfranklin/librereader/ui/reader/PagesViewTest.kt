@@ -153,7 +153,11 @@ class TestPagesView {
 
     private fun swipeSlightlyLeft(swiper: Swiper) = GeneralSwipeAction(
         swiper,
-        GeneralLocation.CENTER_RIGHT,
+        { view ->
+            val coords = GeneralLocation.CENTER_RIGHT.calculateCoordinates(view)
+            coords[0] -= 100f
+            coords
+        },
         { view ->
             val coords = GeneralLocation.CENTER_RIGHT.calculateCoordinates(view)
             coords[0] *= 0.8f
@@ -164,7 +168,11 @@ class TestPagesView {
 
     private fun swipeSlightlyRight(swiper: Swiper) = GeneralSwipeAction(
         swiper,
-        GeneralLocation.CENTER_LEFT,
+        { view ->
+            val coords = GeneralLocation.CENTER_LEFT.calculateCoordinates(view)
+            coords[0] = 100f
+            coords
+        },
         { view ->
             val coords = GeneralLocation.CENTER_RIGHT.calculateCoordinates(view)
             coords[0] *= 0.2f
