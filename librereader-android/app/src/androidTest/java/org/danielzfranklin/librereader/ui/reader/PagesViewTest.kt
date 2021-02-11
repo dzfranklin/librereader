@@ -5,6 +5,7 @@ import android.net.Uri
 import android.text.Spanned
 import android.view.View
 import android.view.ViewGroup
+import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.*
 import androidx.test.espresso.action.ViewActions.swipeLeft
@@ -35,13 +36,15 @@ import org.danielzfranklin.librereader.test.R as TestR
 
 @RunWith(JUnit4::class)
 class TestPagesView {
+    private lateinit var scenario: ActivityScenario<ReaderActivity>
     private lateinit var id: BookID
     private lateinit var repo: Repo
     private lateinit var book: Book
     private lateinit var display: BookDisplay
     private lateinit var sections: List<BookSectionDisplay>
 
-    init {
+    @Before
+    fun setUp() {
         repo = Repo.get()
         id = repo.importBook(
             Uri.Builder()
@@ -50,15 +53,7 @@ class TestPagesView {
                 .path(TestR.raw.frankenstein_public_domain_partial.toString())
                 .build()
         )
-//        scenarioRule = ActivityScenarioRule(ReaderActivity.startIntent(instrumentation.targetContext, id))
-    }
-
-    @get:Rule
-    val scenarioRule: ActivityScenarioRule<ReaderActivity> =
-        ActivityScenarioRule(ReaderActivity.startIntent(instrumentation.targetContext, id))
-
-    @Before
-    fun setUp() {
+        scenario = ActivityScenario.launch(ReaderActivity.startIntent(instrumentation.targetContext, id))
         book = repo.getBook(id)!!
         display = createDisplay(book)
         sections = display.sections
@@ -100,6 +95,7 @@ class TestPagesView {
 
     @Test
     fun cancelPageNext() {
+        // TODO: On my Pixel this ends up being a selection event
         onReaderView().perform(swipeSlightlyLeft(Swipe.SLOW))
         onView(withCurrentPage()).check(matches(withPageText(sections[0].pages()[0])))
     }
@@ -114,6 +110,7 @@ class TestPagesView {
 
     @Test
     fun cancelPagePrev() {
+        // TODO: On my Pixel this ends up being a selection event
         onReaderView().perform(swipeLeft())
         Thread.sleep(10)
         onView(withCurrentPage()).check(matches(withPageText(sections[0].pages()[1])))
@@ -183,7 +180,7 @@ class TestPagesView {
 
     private fun createDisplay(book: Book): BookDisplay {
         var display: BookDisplay? = null
-        scenarioRule.scenario.onActivity { activity ->
+        scenario.onActivity { activity ->
             display = BookDisplay(
                 activity, book.id, book.epub, BookPageDisplay.fitParent(
                     activity.requireViewById<ViewGroup>(R.id.readerLayout),
