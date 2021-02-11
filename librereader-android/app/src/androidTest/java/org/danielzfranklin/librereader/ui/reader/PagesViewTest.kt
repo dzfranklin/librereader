@@ -11,7 +11,7 @@ import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withTagValue
 import androidx.test.ext.junit.rules.ActivityScenarioRule
-import org.danielzfranklin.librereader.MainActivity
+import org.danielzfranklin.librereader.ui.MainActivity
 import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.repo.Repo
 import org.danielzfranklin.librereader.model.Book

@@ -1,4 +1,4 @@
-package org.danielzfranklin.librereader
+package org.danielzfranklin.librereader.ui
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
