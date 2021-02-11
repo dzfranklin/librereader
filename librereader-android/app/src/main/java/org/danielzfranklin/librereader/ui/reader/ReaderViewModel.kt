@@ -19,7 +19,7 @@ class ReaderViewModel(val bookId: BookID) : ViewModel() {
         }
     }
 
-    val repo = Repo.get()
+    private val repo = Repo.get()
 
     private val book = repo.getBook(bookId)!!
     val style = MutableStateFlow(book.style).asStateFlow()
