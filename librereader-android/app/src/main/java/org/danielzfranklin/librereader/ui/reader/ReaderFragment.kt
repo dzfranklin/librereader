@@ -1,7 +1,5 @@
 package org.danielzfranklin.librereader.ui.reader
 
-import android.content.ContentResolver
-import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,16 +9,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.databinding.ReaderFragmentBinding
-import org.danielzfranklin.librereader.repo.Repo
+import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookPageDisplay
 import org.danielzfranklin.librereader.ui.reader.overviewView.OverviewView
 import org.danielzfranklin.librereader.ui.reader.pagesView.PagesView
 import timber.log.Timber
 
-@Suppress("unused") // used in fragment_main.xml
 class ReaderFragment : Fragment(), View.OnLayoutChangeListener {
     private lateinit var binding: ReaderFragmentBinding
     private lateinit var model: ReaderViewModel
@@ -34,16 +30,10 @@ class ReaderFragment : Fragment(), View.OnLayoutChangeListener {
     ): View {
         super.onCreateView(inflater, container, savedInstanceState)
 
-        // TODO: We shouldn't need this, just for temp importing
-        val repo = Repo.get()
-
-        val bookId = repo.importBook(
-            Uri.Builder()
-                .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-                .authority(requireContext().packageName)
-                .path(R.raw.frankenstein_public_domain.toString())
-                .build()
-        )
+        val bookId: BookID =
+            requireArguments().getParcelable(ARG_BOOK_ID) ?: throw IllegalArgumentException(
+                "Missing argument ARG_BOOK_ID"
+            )
 
         model =
             ViewModelProvider(this, ReaderViewModel.Factory(bookId))[ReaderViewModel::class.java]
@@ -113,6 +103,16 @@ class ReaderFragment : Fragment(), View.OnLayoutChangeListener {
     }
 
     companion object {
+        fun create(bookId: BookID): ReaderFragment {
+            val fragment = ReaderFragment()
+            fragment.arguments = Bundle().apply {
+                putParcelable(ARG_BOOK_ID, bookId)
+            }
+            return fragment
+        }
+
+        private const val ARG_BOOK_ID = "ARG_BOOK_ID"
+
         private val layoutParams = ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT

@@ -1,0 +1,41 @@
+package org.danielzfranklin.librereader.ui.reader
+
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.commit
+import org.danielzfranklin.librereader.R
+import org.danielzfranklin.librereader.databinding.ReaderActivityBinding
+import org.danielzfranklin.librereader.model.BookID
+
+class ReaderActivity : AppCompatActivity() {
+    private lateinit var binding: ReaderActivityBinding
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val bookId: BookID = intent.getParcelableExtra(EXTRA_BOOK_ID)
+            ?: throw IllegalArgumentException("Missing required extra EXTRA_BOOK_ID")
+
+        binding = ReaderActivityBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        if (savedInstanceState == null) {
+            supportFragmentManager.commit {
+                setReorderingAllowed(true)
+                add(R.id.readerFragmentContainer, ReaderFragment.create(bookId))
+            }
+        }
+    }
+
+    companion object {
+        fun start(context: Context, bookId: BookID) {
+            val intent = Intent(context, ReaderActivity::class.java)
+            intent.putExtra(EXTRA_BOOK_ID, bookId)
+            context.startActivity(intent)
+        }
+
+        private const val EXTRA_BOOK_ID = "EXTRA_BOOK_ID"
+    }
+}
