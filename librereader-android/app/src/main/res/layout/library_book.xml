@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:focusable="true"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="@dimen/libraryBookMargin"
+    android:background="@drawable/book_outline"
+    android:elevation="10dp"
+    tools:layout_width="120dp">
+
+    <ImageView
+        android:id="@+id/bookCover"
+        android:layout_width="0dp"
+        android:layout_height="200dp"
+        android:contentDescription="@string/cover"
+        android:scaleType="fitEnd"
+        app:layout_constraintBottom_toTopOf="@+id/bookTitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        tools:srcCompat="@sample/covers" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/bookProgress"
+        android:layout_width="0dp"
+        android:layout_height="20dp"
+        android:contentDescription="@string/percent_read"
+        android:max="100"
+        android:min="0"
+        app:layout_constraintBottom_toTopOf="@id/bookTitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/bookCover" />
+
+    <TextView
+        android:id="@+id/bookTitle"
+        style="@style/TextAppearance.MaterialComponents.Subtitle2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:lines="2"
+        android:paddingStart="@dimen/libraryBookTitlePaddingX"
+        android:paddingTop="@dimen/libraryBookTitlePaddingY"
+        android:paddingEnd="@dimen/libraryBookTitlePaddingX"
+        android:paddingBottom="@dimen/libraryBookTitlePaddingY"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bookProgress"
+        android:background="@color/transparent"
+        tools:background="#C1CDC3"
+        tools:text="The Count of Monte Cristo" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

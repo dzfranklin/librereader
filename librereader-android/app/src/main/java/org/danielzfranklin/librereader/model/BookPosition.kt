@@ -4,7 +4,19 @@ import android.text.Spanned
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import kotlin.math.abs
 
-data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: Int) {
+data class BookPosition(
+    val id: BookID,
+    val percent: Float,
+    val sectionIndex: Int,
+    val charIndex: Int
+) {
+    constructor(display: BookDisplay, sectionIndex: Int, charIndex: Int) : this(
+        display.id,
+        computePercent(display, sectionIndex, charIndex),
+        sectionIndex,
+        charIndex
+    )
+
     fun movedBy(display: BookDisplay, deltaPages: Int): BookPosition? {
         return when {
             deltaPages == 0 -> this
@@ -22,7 +34,7 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
                 .subList(0, currentPage + count)
                 .sumBy { it.length }
 
-            BookPosition(display.id, sectionIndex, charIndex)
+            BookPosition(display, sectionIndex, charIndex)
         } else {
             if (sectionIndex >= display.sections.size - 1) {
                 null
@@ -42,7 +54,7 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
                 .subList(0, currentPage - count)
                 .sumBy { it.length }
 
-            BookPosition(display.id, sectionIndex, charIndex)
+            BookPosition(display, sectionIndex, charIndex)
         } else {
             if (sectionIndex <= 0) {
                 null
@@ -117,7 +129,7 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
                 if (runningIndex + sectionPages.size - 1 >= pageIndex) {
                     val charIndex =
                         sectionPages.subList(0, pageIndex - runningIndex).sumBy { it.length }
-                    return BookPosition(book.id, sectionIndex, charIndex)
+                    return BookPosition(book, sectionIndex, charIndex)
                 }
                 runningIndex += sectionPages.size
             }
@@ -125,21 +137,38 @@ data class BookPosition(val id: BookID, val sectionIndex: Int, val charIndex: In
             return null
         }
 
-        fun startOf(book: BookDisplay) = BookPosition(book.id, 0, 0)
+        fun startOf(book: BookDisplay) = BookPosition(book, 0, 0)
 
         fun endOf(book: BookDisplay): BookPosition {
             val sectionIndex = book.sections.size - 1
             val charIndex = book.sections[sectionIndex].textLength - 1
-            return BookPosition(book.id, sectionIndex, charIndex)
+            return BookPosition(book, sectionIndex, charIndex)
         }
 
         fun startOfSection(book: BookDisplay, sectionIndex: Int): BookPosition {
-            return BookPosition(book.id, sectionIndex, 0)
+            return BookPosition(book, sectionIndex, 0)
         }
 
         fun endOfSection(book: BookDisplay, sectionIndex: Int): BookPosition {
             val charIndex = book.sections[sectionIndex].textLength - 1
-            return BookPosition(book.id, sectionIndex, charIndex)
+            return BookPosition(book, sectionIndex, charIndex)
+        }
+        
+        private fun computePercent(display: BookDisplay, sectionIndex: Int, charIndex: Int): Float {
+            if (display.textLength == 0) {
+                return 1f
+            }
+
+            var runningIndex = 0
+            for ((i, section) in display.sections.withIndex()) {
+                if (i < sectionIndex) {
+                    runningIndex += section.textLength
+                } else {
+                    runningIndex += charIndex
+                    break
+                }
+            }
+            return (runningIndex + 1).toFloat() / display.textLength.toFloat()
         }
     }
 }

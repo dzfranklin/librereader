@@ -2,4 +2,6 @@
     <string name="app_name">LibreReader</string>
     <string name="next_page">Next page</string>
     <string name="prev_page">Previous page</string>
+    <string name="cover">Cover</string>
+    <string name="percent_read">Percent read</string>
 </resources>

@@ -5,4 +5,8 @@
     <dimen name="overviewMinMarginBetweenPagesAndSeeker">16dp</dimen>
     <dimen name="overviewSeekerMarginX">32dp</dimen>
     <dimen name="overviewSeekerMarginBottom">16dp</dimen>
+    <dimen name="libraryBookTitlePaddingY">4dp</dimen>
+    <dimen name="libraryBookTitlePaddingX">8dp</dimen>
+    <dimen name="libraryBookMargin">5dp</dimen>
+    <dimen name="libraryBookCornerRadius">8dp</dimen>
 </resources>
