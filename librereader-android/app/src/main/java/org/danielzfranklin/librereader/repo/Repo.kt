@@ -43,11 +43,18 @@ class Repo(private val app: LibreReaderApplication) : CoroutineScope {
 
         val importedDir = app.getDir(EpubImport.IMPORTED_DIR, Context.MODE_PRIVATE)
         val bookDir = File(importedDir, meta.id.toString())
+        val epub = withContext(Dispatchers.IO) {
+            async {
+                // False positive, see <https://youtrack.jetbrains.com/issue/KTIJ-830>
+                @Suppress("BlockingMethodInNonBlockingContext")
+                EpubReader().readEpub(File(bookDir, EpubImport.STORED_EPUB_FILE).inputStream())
+            }
+        }
         store[meta.id] = Book(
             meta.id,
             meta.style,
             position.asStateFlow(),
-            EpubReader().readEpub(File(bookDir, EpubImport.STORED_EPUB_FILE).inputStream())
+            epub.await()
         )
 
         return meta.id
