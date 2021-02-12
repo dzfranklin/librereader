@@ -1,67 +1,52 @@
 package org.danielzfranklin.librereader.repo
 
-import android.content.Context
 import android.net.Uri
+import com.squareup.sqldelight.android.AndroidSqliteDriver
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
+import nl.siegmann.epublib.domain.Book
 import nl.siegmann.epublib.epub.EpubReader
+import org.danielzfranklin.librereader.Database
 import org.danielzfranklin.librereader.LibreReaderApplication
-import org.danielzfranklin.librereader.model.Book
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.model.BookMeta
 import org.danielzfranklin.librereader.model.BookPosition
-import org.danielzfranklin.librereader.util.atomicUpdate
-import java.io.File
-import java.util.concurrent.ConcurrentHashMap
+import org.danielzfranklin.librereader.model.BookStyle
 
 class Repo(private val app: LibreReaderApplication) : CoroutineScope {
     override val coroutineContext = Job()
 
-    // TODO: Replace with real store
-    private val positions = ConcurrentHashMap<BookID, MutableStateFlow<BookPosition>>()
-    private val store = ConcurrentHashMap<BookID, Book>()
-    private val metaStore = MutableStateFlow(emptyList<BookMeta>())
+    private val dbDriver = AndroidSqliteDriver(Database.Schema, app, DB_FILE)
+    private val database = Database(dbDriver)
+    private val bookDao = BookDao(app, database)
 
-    fun listBooks(): StateFlow<List<BookMeta>> {
-        return metaStore.asStateFlow()
-    }
+    fun listBooks(): Flow<List<BookMeta>> = bookDao.list()
 
-    fun updatePosition(id: BookID, position: BookPosition) {
-        positions[id]!!.value = position
+    suspend fun updatePosition(position: BookPosition) {
+        bookDao.updatePosition(position)
     }
 
     suspend fun importBook(uri: Uri): BookID {
         val meta = EpubImport(coroutineContext, app, uri).import()
-
-        metaStore.atomicUpdate { it + listOf(meta) }
-
-        val position = MutableStateFlow(meta.position)
-        positions[meta.id] = position
-
-        val importedDir = app.getDir(EpubImport.IMPORTED_DIR, Context.MODE_PRIVATE)
-        val bookDir = File(importedDir, meta.id.toString())
-        val epub = withContext(Dispatchers.IO) {
-            async {
-                // False positive, see <https://youtrack.jetbrains.com/issue/KTIJ-830>
-                @Suppress("BlockingMethodInNonBlockingContext")
-                EpubReader().readEpub(File(bookDir, EpubImport.STORED_EPUB_FILE).inputStream())
-            }
-        }
-        store[meta.id] = Book(
-            meta.id,
-            meta.style,
-            position.asStateFlow(),
-            epub.await()
-        )
-
+        bookDao.insert(meta)
         return meta.id
     }
 
-    fun getBook(id: BookID): Book? {
-        return store[id]
+    suspend fun getBook(id: BookID): BookMeta = bookDao.get(id)
+
+    fun getBookStyleFlow(id: BookID): Flow<BookStyle> = bookDao.getBookStyleFlow(id)
+
+    /**
+     * Assumes the id is valid
+     */
+    suspend fun getEpub(id: BookID): Book = withContext(Dispatchers.IO) {
+        val stream = BookFiles(app, id).epubFile.inputStream()
+        // False positive, see <https://youtrack.jetbrains.com/issue/KTIJ-830>
+        @Suppress("BlockingMethodInNonBlockingContext")
+        EpubReader().readEpub(stream)
     }
 
     companion object {
@@ -74,5 +59,7 @@ class Repo(private val app: LibreReaderApplication) : CoroutineScope {
         fun get(): Repo {
             return instance ?: throw IllegalStateException("Repo not initialized")
         }
+
+        private const val DB_FILE = "main.db"
     }
 }

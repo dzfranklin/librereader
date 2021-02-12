@@ -32,7 +32,6 @@ class EpubImport(
     private val tempUuid = UUID.randomUUID().toString()
 
     private val inProgressDir = context.getDir(IN_PROGRESS_DIR, Context.MODE_PRIVATE)
-    private val importedBooksDir = context.getDir(IMPORTED_DIR, Context.MODE_PRIVATE)
 
     private data class ParsedData(
         val title: String,
@@ -84,14 +83,14 @@ class EpubImport(
         val position = BookPosition(id, 0f, 0, 0)
         val style = BookStyle()
 
-        val bookDir = File(importedBooksDir, id.toString())
-        bookDir.mkdir()
+        val bookFiles = BookFiles(context, id)
+        bookFiles.initialize()
         awaitAll(
             async {
-                writeStream(parsed.coverStream, File(bookDir, STORED_COVER_FILE))
+                writeStream(parsed.coverStream, bookFiles.coverFile)
             },
             async {
-                writeStream(tempFile.inputStream(), File(bookDir, STORED_EPUB_FILE))
+                writeStream(tempFile.inputStream(), bookFiles.epubFile)
             }
         )
         tempFile.delete()
@@ -118,8 +117,5 @@ class EpubImport(
 
     companion object {
         private const val IN_PROGRESS_DIR = "imported_books_in_progress"
-        const val IMPORTED_DIR = "imported_books"
-        const val STORED_EPUB_FILE = "epub"
-        const val STORED_COVER_FILE = "cover"
     }
 }

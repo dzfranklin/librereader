@@ -13,11 +13,16 @@ import androidx.test.espresso.action.ViewActions.swipeRight
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withTagValue
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.runBlocking
+import nl.siegmann.epublib.domain.Book
 import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.instrumentation
-import org.danielzfranklin.librereader.model.Book
 import org.danielzfranklin.librereader.model.BookID
+import org.danielzfranklin.librereader.model.BookMeta
 import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.repo.Repo
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
@@ -38,7 +43,8 @@ class TestPagesView {
     private lateinit var scenario: ActivityScenario<ReaderActivity>
     private lateinit var id: BookID
     private lateinit var repo: Repo
-    private lateinit var book: Book
+    private lateinit var meta: StateFlow<BookMeta>
+    private lateinit var epub: Book
     private lateinit var display: BookDisplay
     private lateinit var sections: List<BookSectionDisplay>
 
@@ -54,10 +60,18 @@ class TestPagesView {
                     .build()
             )
         }
+
         scenario =
             ActivityScenario.launch(ReaderActivity.startIntent(instrumentation.targetContext, id))
-        book = repo.getBook(id)!!
-        display = createDisplay(book)
+
+        runBlocking {
+            val metaLoad = async { repo.getBook(id).stateIn(this) }
+            val epubLoad = async { repo.getEpub(id) }
+            meta = metaLoad.await()
+            epub = epubLoad.await()
+        }
+
+        display = createDisplay(meta.value, epub)
         sections = display.sections
     }
 
@@ -66,6 +80,7 @@ class TestPagesView {
         for (sectionIndex in sections.indices) {
             for ((pageIndex, page) in sections[sectionIndex].pages().withIndex()) {
                 Timber.d("On page %s of section %s", pageIndex, sectionIndex)
+                Timber.i("Current position %s", meta.value.position)
 
                 onView(withCurrentPage())
                     .check(matches(withPageText(page)))
@@ -78,12 +93,14 @@ class TestPagesView {
 
     @Test
     fun pagePrev() {
-        repo.updatePosition(id, BookPosition.endOf(display))
+        runBlocking {
+            repo.updatePosition(BookPosition.endOf(display))
+        }
 
         for (sectionIndex in sections.indices.reversed()) {
             for ((pageIndex, page) in sections[sectionIndex].pages().withIndex().reversed()) {
                 Timber.i("Expected page %s of section %s", pageIndex, sectionIndex)
-                Timber.i("Current position %s", book.position.value)
+                Timber.i("Current position %s", meta.value.position)
 
                 onView(withCurrentPage())
                     .check(matches(withPageText(page)))
@@ -142,7 +159,9 @@ class TestPagesView {
     fun swipeNextOnLastPage() {
         val lastPage = sections.last().pages().last()
 
-        repo.updatePosition(id, BookPosition.endOf(display))
+        runBlocking {
+            repo.updatePosition(BookPosition.endOf(display))
+        }
         Thread.sleep(10)
         onView(withCurrentPage()).check(matches(withPageText(lastPage)))
 
@@ -180,13 +199,13 @@ class TestPagesView {
         Press.FINGER
     )
 
-    private fun createDisplay(book: Book): BookDisplay {
+    private fun createDisplay(meta: BookMeta, epub: Book): BookDisplay {
         var display: BookDisplay? = null
         scenario.onActivity { activity ->
             display = BookDisplay(
-                activity, book.id, book.epub, BookPageDisplay.fitParent(
+                activity, meta.id, epub, BookPageDisplay.fitParent(
                     activity.requireViewById<ViewGroup>(R.id.readerLayout),
-                    book.style
+                    meta.style
                 )
             )
         }
