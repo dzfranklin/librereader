@@ -4,7 +4,9 @@ import android.content.Context
 import android.graphics.ImageDecoder
 import android.graphics.drawable.Drawable
 import android.text.*
+import androidx.core.content.ContextCompat
 import nl.siegmann.epublib.domain.Resources
+import org.danielzfranklin.librereader.R
 import org.xml.sax.XMLReader
 import timber.log.Timber
 import java.nio.ByteBuffer
@@ -109,7 +111,12 @@ class BookSectionDisplay(
         return Html.fromHtml(
             html,
             0,
-            ImageGetter(book.epub.resources, book.pageDisplay.width, book.pageDisplay.height),
+            ImageGetter(
+                context,
+                book.epub.resources,
+                book.pageDisplay.width,
+                book.pageDisplay.height
+            ),
             TagHandler()
         )
     }
@@ -131,12 +138,15 @@ class BookSectionDisplay(
     }
 
     private class ImageGetter(
+        private val context: Context,
         private val resources: Resources,
         private val maxWidth: Int,
         private val maxHeight: Int
     ) : Html.ImageGetter {
         override fun getDrawable(src: String?): Drawable {
             val res = resources.getByHref(src)
+                ?: return ContextCompat.getDrawable(context, R.drawable.ic_help_center)!!
+
             val source = ImageDecoder.createSource(ByteBuffer.wrap(res.data))
             val drawable = ImageDecoder.decodeDrawable(source)
 
