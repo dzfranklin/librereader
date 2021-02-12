@@ -1,13 +1,14 @@
 package org.danielzfranklin.librereader.model
 
-import android.graphics.drawable.Drawable
+import android.graphics.Bitmap
 import androidx.annotation.ColorInt
 
 data class BookMeta(
     val id: BookID,
-    val cover: Drawable,
-    val title: String,
     val position: BookPosition,
+    val style: BookStyle,
+    val cover: Bitmap,
+    val title: String,
     @ColorInt val coverBgColor: Int,
     @ColorInt val coverTextColor: Int
 )

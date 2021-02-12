@@ -57,7 +57,7 @@ class BooksAdapter(private val onClick: (BookID) -> Unit) :
                 clipToOutline = true
             }
             binding.bookCover.apply {
-                setImageDrawable(book.cover)
+                setImageBitmap(book.cover)
             }
             binding.bookProgress.apply {
                 setIndicatorColor(book.coverTextColor)

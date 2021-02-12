@@ -13,7 +13,7 @@ import androidx.test.espresso.action.ViewActions.swipeRight
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withTagValue
-import androidx.test.ext.junit.rules.ActivityScenarioRule
+import kotlinx.coroutines.runBlocking
 import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.instrumentation
 import org.danielzfranklin.librereader.model.Book
@@ -27,7 +27,6 @@ import org.hamcrest.BaseMatcher
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.Description
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -46,14 +45,17 @@ class TestPagesView {
     @Before
     fun setUp() {
         repo = Repo.get()
-        id = repo.importBook(
-            Uri.Builder()
-                .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-                .authority(instrumentation.context.packageName)
-                .path(TestR.raw.frankenstein_public_domain_partial.toString())
-                .build()
-        )
-        scenario = ActivityScenario.launch(ReaderActivity.startIntent(instrumentation.targetContext, id))
+        id = runBlocking {
+            repo.importBook(
+                Uri.Builder()
+                    .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
+                    .authority(instrumentation.context.packageName)
+                    .path(TestR.raw.frankenstein_public_domain_partial.toString())
+                    .build()
+            )
+        }
+        scenario =
+            ActivityScenario.launch(ReaderActivity.startIntent(instrumentation.targetContext, id))
         book = repo.getBook(id)!!
         display = createDisplay(book)
         sections = display.sections
