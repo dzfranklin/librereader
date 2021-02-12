@@ -174,13 +174,6 @@ class BookSectionDisplay(
             tag: String?,
             output: Editable?,
             xmlReader: XMLReader?
-        ) {
-            if (opening) {
-                Timber.d("Unrecognized tag %s opened", tag)
-            } else {
-                Timber.d("Unrecognized tag %s closed", tag)
-            }
-        }
-
+        ) {}
     }
 }
