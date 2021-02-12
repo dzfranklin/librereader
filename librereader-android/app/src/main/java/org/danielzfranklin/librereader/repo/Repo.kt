@@ -1,6 +1,5 @@
 package org.danielzfranklin.librereader.repo
 
-import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import kotlinx.coroutines.CoroutineScope
@@ -8,16 +7,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import nl.siegmann.epublib.epub.EpubReader
 import org.danielzfranklin.librereader.LibreReaderApplication
-import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.model.Book
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.model.BookMeta
 import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.util.atomicUpdate
-import timber.log.Timber
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 

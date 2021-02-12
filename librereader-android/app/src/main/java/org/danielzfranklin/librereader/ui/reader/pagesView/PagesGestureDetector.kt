@@ -60,7 +60,7 @@ class PagesGestureDetector(
         private val turnState: MutableStateFlow<TurnState>,
         private val showOverview: MutableStateFlow<Boolean>,
         private val pageWidth: Float,
-        private val displayMetrics: DisplayMetrics
+        displayMetrics: DisplayMetrics
     ) : GestureDetector.SimpleOnGestureListener() {
         var turnBackwardsEnabled = true
         var turnForwardsEnabled = true

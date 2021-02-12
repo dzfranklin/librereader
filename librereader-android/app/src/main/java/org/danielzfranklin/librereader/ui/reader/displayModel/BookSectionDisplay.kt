@@ -20,7 +20,7 @@ import kotlin.math.min
 class BookSectionDisplay(
     private val context: Context,
     private val book: BookDisplay,
-    private val index: Int
+    index: Int
 ) {
     private val ref = book.epub.spine.spineReferences[index]
 

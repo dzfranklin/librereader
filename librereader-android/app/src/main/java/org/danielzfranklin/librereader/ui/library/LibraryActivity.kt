@@ -1,7 +1,5 @@
 package org.danielzfranklin.librereader.ui.library
 
-import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Environment
@@ -16,8 +14,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.databinding.LibraryActivityBinding
-import org.danielzfranklin.librereader.repo.Repo
-import org.danielzfranklin.librereader.ui.reader.ReaderActivity
 import timber.log.Timber
 
 class LibraryActivity : AppCompatActivity(R.layout.reader_fragment), CoroutineScope {

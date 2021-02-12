@@ -1,7 +1,6 @@
 package org.danielzfranklin.librereader.model
 
 import androidx.test.espresso.matcher.ViewMatchers.assertThat
-import androidx.test.platform.app.InstrumentationRegistry
 import org.danielzfranklin.librereader.TestSampleBookDisplay
 import org.danielzfranklin.librereader.instrumentation
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
