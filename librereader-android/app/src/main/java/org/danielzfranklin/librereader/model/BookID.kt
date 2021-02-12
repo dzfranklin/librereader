@@ -14,19 +14,20 @@ data class BookID(private val value: String) : Parcelable {
     companion object {
         fun forEpub(epub: InputStream): BookID {
             val digest = MessageDigest.getInstance("MD5")
-            val inputStream = DigestInputStream(epub, digest)
-            while (inputStream.read() != -1) {
-                // We need to read the whole stream to update the digest
-            }
-
-            val hash = digest
-                .digest()
-                .joinToString("") {
-                    // Convert to hex
-                    String.format("%02x", it)
+            return DigestInputStream(epub, digest).use { inputStream ->
+                while (inputStream.read() != -1) {
+                    // We need to read the whole stream to update the digest
                 }
 
-            return BookID("$tag:$hash")
+                val hash = digest
+                    .digest()
+                    .joinToString("") {
+                        // Convert to hex
+                        String.format("%02x", it)
+                    }
+
+                BookID("$tag:$hash")
+            }
         }
 
         private const val tag = "librereaderidv1"
