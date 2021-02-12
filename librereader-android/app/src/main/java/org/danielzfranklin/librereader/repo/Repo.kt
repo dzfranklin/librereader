@@ -16,6 +16,7 @@ import org.danielzfranklin.librereader.model.Book
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.model.BookMeta
 import org.danielzfranklin.librereader.model.BookPosition
+import org.danielzfranklin.librereader.util.atomicUpdate
 import timber.log.Timber
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -39,10 +40,7 @@ class Repo(private val app: LibreReaderApplication) : CoroutineScope {
     suspend fun importBook(uri: Uri): BookID {
         val meta = EpubImport(coroutineContext, app, uri).import()
 
-        val prev = metaStore.value
-        while (!metaStore.compareAndSet(prev, prev + listOf(meta))) {
-            // retry until succeeds
-        }
+        metaStore.atomicUpdate { it + listOf(meta) }
 
         val position = MutableStateFlow(meta.position)
         positions[meta.id] = position
