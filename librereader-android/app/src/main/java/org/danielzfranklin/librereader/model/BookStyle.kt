@@ -9,7 +9,7 @@ import androidx.core.view.setPadding
 import kotlin.math.roundToInt
 
 /**
- * @param textSize Unit is dp
+ * @param textSize Unit is sp
  * @param padding Unit is dp
  */
 data class BookStyle(
