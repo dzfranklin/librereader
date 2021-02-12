@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.collect
@@ -19,7 +20,8 @@ import timber.log.Timber
 
 class ReaderFragment : Fragment(), View.OnLayoutChangeListener {
     private lateinit var binding: ReaderFragmentBinding
-    private lateinit var model: ReaderViewModel
+    private lateinit var bookId: BookID
+    private val model: ReaderViewModel by viewModels { ReaderViewModel.Factory(bookId) }
 
     private var rootLaidOut = false
 
@@ -30,13 +32,10 @@ class ReaderFragment : Fragment(), View.OnLayoutChangeListener {
     ): View {
         super.onCreateView(inflater, container, savedInstanceState)
 
-        val bookId: BookID =
-            requireArguments().getParcelable(ARG_BOOK_ID) ?: throw IllegalArgumentException(
-                "Missing argument ARG_BOOK_ID"
-            )
+        bookId = requireArguments().getParcelable(ARG_BOOK_ID) ?: throw IllegalArgumentException(
+            "Missing argument ARG_BOOK_ID"
+        )
 
-        model =
-            ViewModelProvider(this, ReaderViewModel.Factory(bookId))[ReaderViewModel::class.java]
         binding = ReaderFragmentBinding.inflate(layoutInflater, container, false)
 
         binding.root.addOnLayoutChangeListener(this)
