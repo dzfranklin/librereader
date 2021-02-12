@@ -23,49 +23,6 @@ import java.util.concurrent.ConcurrentHashMap
 class Repo(private val app: LibreReaderApplication) : CoroutineScope {
     override val coroutineContext = Job()
 
-    init {
-        // TODO: Remove
-        launch {
-            importBook(
-                Uri.Builder()
-                    .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-                    .authority(app.packageName)
-                    .path(R.raw.frankenstein_public_domain.toString())
-                    .build()
-            )
-        }
-
-        launch {
-            importBook(
-                Uri.Builder()
-                    .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-                    .authority(app.packageName)
-                    .path(R.raw.count_monte_cristo_public_domain.toString())
-                    .build()
-            )
-        }
-
-        launch {
-            importBook(
-                Uri.Builder()
-                    .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-                    .authority(app.packageName)
-                    .path(R.raw.rur_public_domain.toString())
-                    .build()
-            )
-        }
-
-        launch {
-            importBook(
-                Uri.Builder()
-                    .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-                    .authority(app.packageName)
-                    .path(R.raw.hadji_murad_public_domain.toString())
-                    .build()
-            )
-        }
-    }
-
     // TODO: Replace with real store
     private val positions = ConcurrentHashMap<BookID, MutableStateFlow<BookPosition>>()
     private val store = ConcurrentHashMap<BookID, Book>()
