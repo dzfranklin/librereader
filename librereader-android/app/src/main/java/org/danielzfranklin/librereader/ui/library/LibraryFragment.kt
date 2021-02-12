@@ -15,11 +15,12 @@ import org.danielzfranklin.librereader.databinding.LibraryFragmentBinding
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.ui.reader.ReaderActivity
 
-class LibraryFragment: Fragment(), CoroutineScope {
+class LibraryFragment : Fragment(), CoroutineScope {
     override val coroutineContext = lifecycleScope.coroutineContext
 
     private lateinit var binding: LibraryFragmentBinding
-    private val model: LibraryViewModel by viewModels()
+    // Ensures we get the same instance as the activity
+    private val model: LibraryViewModel by viewModels({ requireActivity() })
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -36,6 +37,13 @@ class LibraryFragment: Fragment(), CoroutineScope {
         launch {
             model.books.collect {
                 adapter.update(it)
+            }
+        }
+
+        launch {
+            model.isImportInProgress.collect {
+                binding.importingProgress.visibility = if (it) View.VISIBLE else View.INVISIBLE
+                binding.importingProgress.isIndeterminate = it
             }
         }
 
