@@ -1,10 +1,7 @@
 package org.danielzfranklin.librereader.ui.reader
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.repo.Repo
 import org.danielzfranklin.librereader.model.BookID
@@ -26,9 +23,7 @@ class PositionProcessor(
             return
         }
 
-        if (_events.tryEmit(Change(changer.hashCode(), position))) {
-            repo.updatePosition(id, position)
-        } else {
+        if (!_events.tryEmit(Change(changer.hashCode(), position))) {
             throw IllegalStateException("State flow should never refuse")
         }
     }
@@ -42,6 +37,12 @@ class PositionProcessor(
         launch {
             position.collect {
                 set(this@PositionProcessor, it)
+            }
+        }
+
+        launch {
+            events.collectLatest {
+                repo.updatePosition(it.position)
             }
         }
     }
