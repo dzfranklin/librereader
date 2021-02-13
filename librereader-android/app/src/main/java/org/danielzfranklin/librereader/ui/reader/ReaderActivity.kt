@@ -22,6 +22,7 @@ class ReaderActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         if (savedInstanceState == null) {
+            // Fragments are restored automatically, see <https://blog.propaneapps.com/android/fragments-restoration-magic/>
             supportFragmentManager.commit {
                 setReorderingAllowed(true)
                 add(R.id.readerFragmentContainer, ReaderFragment.create(bookId))
