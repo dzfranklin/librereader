@@ -16,7 +16,7 @@ import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.databinding.LibraryActivityBinding
 import timber.log.Timber
 
-class LibraryActivity : AppCompatActivity(R.layout.reader_fragment), CoroutineScope {
+class LibraryActivity : AppCompatActivity(R.layout.library_activity), CoroutineScope {
     override val coroutineContext = lifecycleScope.coroutineContext
 
     private lateinit var binding: LibraryActivityBinding
