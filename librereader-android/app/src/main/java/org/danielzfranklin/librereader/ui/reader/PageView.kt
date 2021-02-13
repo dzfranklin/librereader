@@ -130,15 +130,12 @@ class PageView @JvmOverloads constructor(
             edgePaint
         )
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            val colors = intArrayOf(Color.LTGRAY, Color.TRANSPARENT)
-            edgeShadow.setColors(colors, null)
+        edgeShadow.colors = intArrayOf(Color.LTGRAY, Color.TRANSPARENT)
 
-            val startX = lineX.toInt() + (edgeWidth / 2)
-            edgeShadow.setBounds(startX, 0, startX + edgeShadowWidth, height)
+        val startX = lineX.toInt() + (edgeWidth / 2)
+        edgeShadow.setBounds(startX, 0, startX + edgeShadowWidth, height)
 
-            edgeShadow.draw(canvas)
-        }
+        edgeShadow.draw(canvas)
     }
 
     init {
