@@ -48,6 +48,10 @@ class PageView @JvmOverloads constructor(
             style.apply(this)
         }
 
+    init {
+        style.apply(this)
+    }
+
     private var _percentTurned = 1f
     var percentTurned: Float
         get() = _percentTurned
