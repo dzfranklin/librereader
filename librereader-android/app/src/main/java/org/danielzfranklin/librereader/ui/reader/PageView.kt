@@ -23,6 +23,11 @@ class PageView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : androidx.appcompat.widget.AppCompatTextView(context, attrs, defStyleAttr) {
     var manager: PagesView? = null
+    init {
+        if (isInEditMode) {
+            text = context.getText(R.string.preview_book_text)
+        }
+    }
 
     init {
         focusable = FOCUSABLE
