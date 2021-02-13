@@ -15,6 +15,7 @@ import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.model.BookMeta
 import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.model.BookStyle
+import java.util.zip.ZipInputStream
 
 class Repo(private val app: LibreReaderApplication) : CoroutineScope {
     override val coroutineContext = Job()
@@ -43,10 +44,13 @@ class Repo(private val app: LibreReaderApplication) : CoroutineScope {
      * Assumes the id is valid
      */
     suspend fun getEpub(id: BookID): Book = withContext(Dispatchers.IO) {
-        val stream = BookFiles(app, id).epubFile.inputStream()
-        // False positive, see <https://youtrack.jetbrains.com/issue/KTIJ-830>
-        @Suppress("BlockingMethodInNonBlockingContext")
-        EpubReader().readEpub(stream)
+        BookFiles(app, id).epubFile.inputStream().use { inputStream ->
+            ZipInputStream(inputStream).use { zipStream ->
+                // False positive, see <https://youtrack.jetbrains.com/issue/KTIJ-830>
+                @Suppress("BlockingMethodInNonBlockingContext")
+                EpubReader().readEpub(zipStream)
+            }
+        }
     }
 
     companion object {
