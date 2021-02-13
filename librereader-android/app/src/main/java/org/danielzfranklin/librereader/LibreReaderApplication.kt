@@ -1,6 +1,8 @@
 package org.danielzfranklin.librereader
 
 import android.app.Application
+import android.os.StrictMode
+import android.os.StrictMode.VmPolicy
 import org.danielzfranklin.librereader.repo.Repo
 import timber.log.Timber
 
@@ -10,6 +12,15 @@ class LibreReaderApplication : Application() {
         super.onCreate()
         Repo.initialize(this)
         Timber.plant(LogDebugTree())
+
+        if (BuildConfig.DEBUG) {
+            val policy = VmPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .penaltyDeath()
+                .build()
+            StrictMode.setVmPolicy(policy)
+        }
     }
 
     class LogDebugTree : Timber.DebugTree() {
