@@ -40,24 +40,22 @@ class PageView @JvmOverloads constructor(
         setText(span, BufferType.SPANNABLE)
     }
 
-    private var _style: BookStyle = BookStyle()
-    var style: BookStyle
-        get() = _style
+    var style: BookStyle = BookStyle()
         set(style) {
-            this._style = style
-            style.apply(this)
+            if (field != style) {
+                style.apply(this)
+                field = style
+            }
         }
 
     init {
         style.apply(this)
     }
 
-    private var _percentTurned = 1f
-    var percentTurned: Float
-        get() = _percentTurned
+    var percentTurned = 1f
         set(percent) {
-            if (_percentTurned != percent) {
-                _percentTurned = percent
+            if (field != percent) {
+                field = percent
                 invalidate()
                 requestLayout()
             }
