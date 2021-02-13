@@ -21,7 +21,9 @@ import org.danielzfranklin.librereader.ui.reader.overviewView.OverviewView
 import org.danielzfranklin.librereader.ui.reader.pagesView.PagesView
 import timber.log.Timber
 
-class ReaderFragment : Fragment(), View.OnLayoutChangeListener, CoroutineScope {
+class ReaderFragment : Fragment(R.layout.reader_fragment), View.OnLayoutChangeListener,
+    CoroutineScope {
+
     override val coroutineContext = lifecycleScope.coroutineContext
 
     private lateinit var binding: ReaderFragmentBinding

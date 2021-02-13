@@ -11,11 +11,12 @@ import androidx.recyclerview.widget.GridLayoutManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.databinding.LibraryFragmentBinding
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.ui.reader.ReaderActivity
 
-class LibraryFragment : Fragment(), CoroutineScope {
+class LibraryFragment : Fragment(R.layout.library_fragment), CoroutineScope {
     override val coroutineContext = lifecycleScope.coroutineContext
 
     private lateinit var binding: LibraryFragmentBinding
