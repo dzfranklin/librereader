@@ -23,11 +23,6 @@ class PageView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : androidx.appcompat.widget.AppCompatTextView(context, attrs, defStyleAttr) {
     var manager: PagesView? = null
-    init {
-        if (isInEditMode) {
-            text = context.getText(R.string.preview_book_text)
-        }
-    }
 
     init {
         focusable = FOCUSABLE
@@ -143,6 +138,13 @@ class PageView @JvmOverloads constructor(
             edgeShadow.setBounds(startX, 0, startX + edgeShadowWidth, height)
 
             edgeShadow.draw(canvas)
+        }
+    }
+
+    init {
+        if (isInEditMode) {
+            text = context.getText(R.string.preview_book_text)
+            percentTurned = 0.7f
         }
     }
 }
