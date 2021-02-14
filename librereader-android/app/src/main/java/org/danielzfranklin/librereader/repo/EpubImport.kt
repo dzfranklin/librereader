@@ -17,6 +17,7 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.util.*
+import java.util.zip.ZipInputStream
 import kotlin.coroutines.CoroutineContext
 
 // False positive, see <https://youtrack.jetbrains.com/issue/KTIJ-830>
@@ -54,7 +55,11 @@ class EpubImport(
         }
 
         val parsedDeferred = async {
-            val epub = EpubReader().readEpub(tempFile.inputStream())
+            val epub = tempFile.inputStream().use { inputStream ->
+                ZipInputStream(inputStream).use { zipStream ->
+                    EpubReader().readEpub(zipStream)
+                }
+            }
 
             val coverSource =
                 ImageDecoder.createSource(ByteBuffer.wrap(epub.coverImage.data))
