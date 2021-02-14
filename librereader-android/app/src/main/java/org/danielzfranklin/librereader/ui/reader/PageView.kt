@@ -81,7 +81,8 @@ class PageView @JvmOverloads constructor(
         }
 
         if (percentTurned > 0f) {
-            val edge = (width + edgeWidth + edgeShadowWidth).toFloat() * percentTurned
+            val totalEdge = (edgeWidth + edgeShadowWidth).toFloat()
+            val edge = (width.toFloat() + totalEdge) * percentTurned - totalEdge
             drawText(canvas, edge)
             drawTurnShadow(canvas, edge)
         } else {
