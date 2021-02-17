@@ -1,10 +1,12 @@
 package org.danielzfranklin.librereader
 
+import android.view.View
 import androidx.test.espresso.action.*
 import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.platform.app.InstrumentationRegistry
 import org.danielzfranklin.librereader.ui.reader.PageView
 import org.hamcrest.CoreMatchers
+import org.hamcrest.Matcher
 
 val instrumentation
     get() = InstrumentationRegistry.getInstrumentation()!!
@@ -39,7 +41,8 @@ fun swipeSlightlyRight(swiper: Swiper) = GeneralSwipeAction(
     Press.FINGER
 )
 
-fun isPageView() = ViewMatchers.withClassName(CoreMatchers.`is`(PageView::class.qualifiedName))
+fun isPageView(): Matcher<View> =
+    ViewMatchers.withClassName(CoreMatchers.`is`(PageView::class.qualifiedName))
 
 fun clickPercent(xPercent: Float, yPercent: Float) = GeneralClickAction(
     Tap.SINGLE,
