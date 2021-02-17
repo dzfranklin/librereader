@@ -1,7 +1,6 @@
 package org.danielzfranklin.librereader.repo
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
 import androidx.palette.graphics.Palette
@@ -37,7 +36,6 @@ class EpubImport(
     private data class ParsedData(
         val title: String,
         val coverStream: InputStream,
-        val cover: Bitmap,
         val coverBg: Int,
         val coverText: Int
     )
@@ -79,7 +77,7 @@ class EpubImport(
             val coverText =
                 swatch?.bodyTextColor ?: context.getColor(R.color.libraryBookDefaultText)
 
-            ParsedData(epub.title, epub.coverImage.inputStream, cover, coverBg, coverText)
+            ParsedData(epub.title, epub.coverImage.inputStream, coverBg, coverText)
         }
 
         val id = idDeferred.await()
@@ -99,7 +97,7 @@ class EpubImport(
         )
         tempFile.delete()
 
-        BookMeta(id, position, style, parsed.cover, parsed.title, parsed.coverBg, parsed.coverText)
+        BookMeta(id, position, style, parsed.title, parsed.coverBg, parsed.coverText)
     }
 
     companion object {

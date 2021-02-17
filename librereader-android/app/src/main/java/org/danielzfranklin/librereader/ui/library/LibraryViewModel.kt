@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.repo.Repo
 import org.danielzfranklin.librereader.util.atomicUpdate
 
@@ -25,4 +26,7 @@ class LibraryViewModel : ViewModel(), CoroutineScope {
         repo.importBook(uri)
         _importsInProgress.atomicUpdate { it - 1 }
     }
+
+    suspend fun getCover(id: BookID) =
+        repo.getCover(id)
 }

@@ -33,7 +33,7 @@ class LibraryFragment : Fragment(R.layout.library_fragment), CoroutineScope {
         binding = LibraryFragmentBinding.inflate(layoutInflater, container, false)
 
         binding.books.layoutManager = GridLayoutManager(context, 3)
-        val adapter = BooksAdapter(::onBookClick)
+        val adapter = BooksAdapter(::onBookClick) { id -> model.getCover(id) }
         binding.books.adapter = adapter
         launch {
             model.books.collect {
