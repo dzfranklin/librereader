@@ -88,8 +88,7 @@ class EpubImport(
         val position = BookPosition(id, 0f, 0, 0)
         val style = BookStyle()
 
-        val bookFiles = BookFiles(context, id)
-        bookFiles.initialize()
+        val bookFiles = BookFiles.create(context, id)
         awaitAll(
             async {
                 writeStream(parsed.coverStream, bookFiles.coverFile)

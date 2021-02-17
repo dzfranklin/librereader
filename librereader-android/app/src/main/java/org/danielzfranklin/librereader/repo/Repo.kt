@@ -37,27 +37,18 @@ class Repo(private val app: LibreReaderApplication) : CoroutineScope {
         return meta.id
     }
 
-    suspend fun getBook(id: BookID): BookMeta = bookDao.get(id)
-
-    suspend fun getCover(id: BookID): Bitmap = withContext(Dispatchers.IO) {
-        BookFiles(app, id).coverBitmap()
+    suspend fun getCover(id: BookID): Bitmap? = withContext(Dispatchers.IO) {
+        BookFiles.open(app, id)?.coverBitmap()
     }
 
-    /**
-     * Assumes the id is valid
-     */
-    fun getBookStyleFlow(id: BookID): Flow<BookStyle> = bookDao.getBookStyleFlow(id)
+    fun getBookStyleFlow(id: BookID): Flow<BookStyle?> = bookDao.getBookStyleFlow(id)
 
-    /**
-     * Assumes the id is valid
-     */
-    suspend fun getPosition(id: BookID): BookPosition = bookDao.getPosition(id)
+    suspend fun getPosition(id: BookID): BookPosition? = bookDao.getPosition(id)
 
-    /**
-     * Assumes the id is valid
-     */
-    suspend fun getEpub(id: BookID): Book = withContext(Dispatchers.IO) {
-        BookFiles(app, id).epubFile.inputStream().use { inputStream ->
+    suspend fun getEpub(id: BookID): Book? = withContext(Dispatchers.IO) {
+        val files = BookFiles.open(app, id) ?: return@withContext null
+
+        files.epubFile.inputStream().use { inputStream ->
             ZipInputStream(inputStream).use { zipStream ->
                 // False positive, see <https://youtrack.jetbrains.com/issue/KTIJ-830>
                 @Suppress("BlockingMethodInNonBlockingContext")

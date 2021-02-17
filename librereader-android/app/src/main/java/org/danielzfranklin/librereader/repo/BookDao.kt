@@ -3,7 +3,7 @@ package org.danielzfranklin.librereader.repo
 import android.content.Context
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
-import com.squareup.sqldelight.runtime.coroutines.mapToOne
+import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -42,27 +42,26 @@ class BookDao(private val context: Context, private val database: Database) {
         )
     }
 
-    suspend fun get(id: BookID): BookMeta = withContext(Dispatchers.IO) {
-        queries.get(id.toString(), ::metaMapper).executeAsOne()
-    }
-
-    fun getBookStyleFlow(id: BookID): Flow<BookStyle> =
+    fun getBookStyleFlow(id: BookID): Flow<BookStyle?> =
         queries.getStyle(id.toString())
             .asFlow()
-            .mapToOne()
+            .mapToOneOrNull()
             .map {
-                BookStyle(
-                    it.textColor,
-                    it.bgColor,
-                    BookTypeface.fromName(it.typeface)!!,
-                    it.textSizeSp,
-                    it.paddingDp
-                )
+                it?.let {
+                    BookStyle(
+                        it.textColor,
+                        it.bgColor,
+                        BookTypeface.fromName(it.typeface)!!,
+                        it.textSizeSp,
+                        it.paddingDp
+                    )
+                }
             }
 
-    suspend fun getPosition(id: BookID): BookPosition = withContext(Dispatchers.IO) {
-        val data = queries.getPosition(id.toString()).executeAsOne()
-        BookPosition(id, data.percent, data.sectionIndex, data.charIndex)
+    suspend fun getPosition(id: BookID): BookPosition? = withContext(Dispatchers.IO) {
+        queries.getPosition(id.toString()).executeAsOneOrNull()?.let {
+            BookPosition(id, it.percent, it.sectionIndex, it.charIndex)
+        }
     }
 
     private fun metaMapper(
@@ -74,7 +73,7 @@ class BookDao(private val context: Context, private val database: Database) {
         val position = BookPosition(id, percent, sectionIndex, charIndex)
         val typeface = BookTypeface.fromName(typefaceName)!!
         val style = BookStyle(textColor, bgColor, typeface, textSize, padding)
-        val cover = BookFiles(context, id).coverBitmap()
+        val cover = BookFiles.open(context, id)!!.coverBitmap()
         return BookMeta(id, position, style, cover, title, coverBgColor, coverTextColor)
     }
 }

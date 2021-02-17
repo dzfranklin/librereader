@@ -45,13 +45,13 @@ class ReaderViewModel(val id: BookID) : ViewModel(), CoroutineScope {
             val epub = async { repo.getEpub(id) }
             val position = async { repo.getPosition(id) }
             val style = async { repo.getBookStyleFlow(id).stateIn(this@launch) }
-            _progress.value = Progress.LoadingHasCover(cover.await())
+            _progress.value = Progress.LoadingHasCover(cover.await()!!)
             _progress.value = Progress.Loaded(
                 ReaderFragment.DisplayIndependentData(
                     id,
-                    style.await(),
-                    PositionProcessor(coroutineContext, position.await()),
-                    epub.await(),
+                    style.await().map { it!! }.stateIn(this),
+                    PositionProcessor(coroutineContext, position.await()!!),
+                    epub.await()!!,
                     inOverview
                 )
             )

@@ -60,24 +60,6 @@ create {
     VALUES (:id, :textColor, :bgColor, :typeface, :textSizeSp, :paddingDp);
 }
 
-get:
-    SELECT dbBook.id,
-        title,
-        coverBgColor,
-        coverTextColor,
-        percent,
-        sectionIndex,
-        charIndex,
-        textColor,
-        bgColor,
-        typeface,
-        textSizeSp,
-        paddingDp
-    FROM dbBook
-    JOIN dbBookPosition
-    JOIN dbBookStyle
-    WHERE dbBook.id == ?;
-
 getStyle:
     SELECT *
     FROM dbBookStyle
