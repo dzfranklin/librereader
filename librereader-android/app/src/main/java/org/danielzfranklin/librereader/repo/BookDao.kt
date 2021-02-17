@@ -11,8 +11,8 @@ import kotlinx.coroutines.withContext
 import org.danielzfranklin.librereader.Database
 import org.danielzfranklin.librereader.model.*
 
-class BookDao(private val context: Context, private val database: Database) {
-    val queries = database.dbBookQueries
+class BookDao(private val context: Context, database: Database) {
+    private val queries = database.dbBookQueries
 
     fun list(): Flow<List<BookMeta>> =
         queries.listTitleOrder(::metaMapper)
