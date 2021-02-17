@@ -28,8 +28,6 @@ class ReaderActivity : AppCompatActivity(R.layout.reader_activity), CoroutineSco
     private lateinit var pages: PagesFragment
     private lateinit var overview: OverviewFragment
 
-    private var containerCreated = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
