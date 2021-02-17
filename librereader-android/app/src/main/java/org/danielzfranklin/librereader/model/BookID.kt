@@ -30,7 +30,7 @@ data class BookID(private val value: String) : Parcelable {
             }
         }
 
-        private const val tag = "librereaderidv1"
+        private const val tag = "v1"
 
         @Suppress("UNUSED")
         @JvmField val CREATOR = object : Parcelable.Creator<BookID> {
