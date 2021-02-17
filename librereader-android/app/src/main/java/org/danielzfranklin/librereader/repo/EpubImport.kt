@@ -12,8 +12,8 @@ import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.model.BookMeta
 import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.model.BookStyle
+import org.danielzfranklin.librereader.util.writeTo
 import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.util.*
@@ -46,7 +46,7 @@ class EpubImport(
         val inputStream = context.contentResolver.openInputStream(uri)
             ?: throw IllegalArgumentException("Cannot open input stream")
         val tempFile = File(inProgressDir, tempUuid)
-        writeStream(inputStream, tempFile)
+        inputStream.writeTo(tempFile)
 
         val idDeferred = async {
             withContext(Dispatchers.IO) {
@@ -91,32 +91,15 @@ class EpubImport(
         val bookFiles = BookFiles.create(context, id)
         awaitAll(
             async {
-                writeStream(parsed.coverStream, bookFiles.coverFile)
+                parsed.coverStream.writeTo(bookFiles.coverFile)
             },
             async {
-                writeStream(tempFile.inputStream(), bookFiles.epubFile)
+                tempFile.inputStream().writeTo(bookFiles.epubFile)
             }
         )
         tempFile.delete()
 
         BookMeta(id, position, style, parsed.cover, parsed.title, parsed.coverBg, parsed.coverText)
-    }
-
-    private fun writeStream(inputStream: InputStream, outFile: File) {
-        inputStream.use { input ->
-            FileOutputStream(outFile).use { output ->
-                // See <https://stackoverflow.com/a/56074084>
-                val buffer = ByteArray(4 * 1024)
-                while (true) {
-                    val byteCount = input.read(buffer)
-                    if (byteCount < 0) {
-                        break
-                    }
-                    output.write(buffer, 0, byteCount)
-                }
-                output.flush()
-            }
-        }
     }
 
     companion object {

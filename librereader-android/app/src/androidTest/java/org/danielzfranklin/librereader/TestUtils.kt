@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.danielzfranklin.librereader.ui.reader.PageView
 import org.hamcrest.CoreMatchers
 import org.hamcrest.Matcher
+import java.io.InputStream
 
 val instrumentation
     get() = InstrumentationRegistry.getInstrumentation()!!
@@ -55,3 +56,8 @@ fun clickPercent(xPercent: Float, yPercent: Float) = GeneralClickAction(
     },
     Press.FINGER
 )
+
+fun getResource(name: String): InputStream? =
+    ResourceGetter::class.java.classLoader!!.getResourceAsStream(name)
+
+private class ResourceGetter
