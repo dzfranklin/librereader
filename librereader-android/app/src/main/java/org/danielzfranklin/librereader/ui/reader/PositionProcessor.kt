@@ -1,10 +1,12 @@
 package org.danielzfranklin.librereader.ui.reader
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.danielzfranklin.librereader.repo.Repo
 import org.danielzfranklin.librereader.model.BookPosition
+import org.danielzfranklin.librereader.repo.Repo
 import kotlin.coroutines.CoroutineContext
 
 class PositionProcessor(
@@ -13,7 +15,7 @@ class PositionProcessor(
 ) : CoroutineScope {
     private val repo = Repo.get()
 
-    val position
+    val value
         get() = _events.value.position
 
     fun set(changer: Any, position: BookPosition) {

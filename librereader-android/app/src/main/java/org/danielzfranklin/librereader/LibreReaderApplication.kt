@@ -17,7 +17,7 @@ class LibreReaderApplication : Application() {
             val policy = VmPolicy.Builder()
                 .detectAll()
                 .penaltyLog()
-                .penaltyDeath()
+//                .penaltyDeath()
                 .build()
             StrictMode.setVmPolicy(policy)
         }

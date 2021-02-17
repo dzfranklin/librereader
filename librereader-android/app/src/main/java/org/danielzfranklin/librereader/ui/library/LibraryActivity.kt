@@ -51,6 +51,7 @@ class LibraryActivity : AppCompatActivity(R.layout.library_activity), CoroutineS
     }
 
     private fun launchPicker() {
+        Timber.i("Launching picker")
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = EPUB_MIME
@@ -78,6 +79,7 @@ class LibraryActivity : AppCompatActivity(R.layout.library_activity), CoroutineS
         }
 
         launch {
+            Timber.i("Importing %s", uri)
             model.import(uri)
         }
     }

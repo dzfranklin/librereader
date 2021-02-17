@@ -4,4 +4,12 @@
     <string name="percent_read">Percent read</string>
     <string name="import_book">Import book</string>
     <string name="crimson_pro_font">Crimson Pro</string>
+    <string name="loading">Loading</string>
+    <string name="preview_book_text">
+        <b>On the 24th of February, 1815</b>, the lookout at Notre-Dame de la Garde signalled the
+        three master, the <i>Pharaon</i> from Smyrna, Trieste, and Naples.\n\n
+
+        As usual, a pilot put off immediately, and rounding the Château d’If, got on board the
+        vessel between Cape Morgiou and Rion island.
+    </string>
 </resources>

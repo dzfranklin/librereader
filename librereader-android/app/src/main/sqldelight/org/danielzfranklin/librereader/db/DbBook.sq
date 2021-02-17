@@ -82,3 +82,8 @@ getStyle:
     SELECT *
     FROM dbBookStyle
     WHERE id == ?;
+
+getPosition:
+    SELECT *
+    FROM dbBookPosition
+    WHERE id == ?;

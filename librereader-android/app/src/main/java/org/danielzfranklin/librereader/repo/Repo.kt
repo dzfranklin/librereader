@@ -1,5 +1,6 @@
 package org.danielzfranklin.librereader.repo
 
+import android.graphics.Bitmap
 import android.net.Uri
 import com.squareup.sqldelight.android.AndroidSqliteDriver
 import kotlinx.coroutines.CoroutineScope
@@ -38,7 +39,19 @@ class Repo(private val app: LibreReaderApplication) : CoroutineScope {
 
     suspend fun getBook(id: BookID): BookMeta = bookDao.get(id)
 
+    suspend fun getCover(id: BookID): Bitmap = withContext(Dispatchers.IO) {
+        BookFiles(app, id).coverBitmap()
+    }
+
+    /**
+     * Assumes the id is valid
+     */
     fun getBookStyleFlow(id: BookID): Flow<BookStyle> = bookDao.getBookStyleFlow(id)
+
+    /**
+     * Assumes the id is valid
+     */
+    suspend fun getPosition(id: BookID): BookPosition = bookDao.getPosition(id)
 
     /**
      * Assumes the id is valid

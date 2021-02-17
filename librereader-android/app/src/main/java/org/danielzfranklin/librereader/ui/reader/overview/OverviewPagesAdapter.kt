@@ -1,4 +1,4 @@
-package org.danielzfranklin.librereader.ui.reader.overviewView
+package org.danielzfranklin.librereader.ui.reader.overview
 
 import android.text.style.ImageSpan
 import android.view.ViewGroup

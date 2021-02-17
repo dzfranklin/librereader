@@ -1,72 +1,55 @@
-package org.danielzfranklin.librereader.ui.reader.overviewView
+package org.danielzfranklin.librereader.ui.reader.overview
 
-import android.annotation.SuppressLint
-import android.content.Context
+import android.os.Bundle
 import android.view.GestureDetector
-import android.view.LayoutInflater
 import android.view.MotionEvent
-import android.widget.LinearLayout
+import android.view.View
 import android.widget.SeekBar
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSnapHelper
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.danielzfranklin.librereader.databinding.OverviewViewBinding
+import org.danielzfranklin.librereader.R
+import org.danielzfranklin.librereader.databinding.OverviewFragmentBinding
 import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.ui.reader.PositionProcessor
+import org.danielzfranklin.librereader.ui.reader.ReaderFragment
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import timber.log.Timber
-import kotlin.coroutines.CoroutineContext
 
-@SuppressLint("ViewConstructor")
-class OverviewView(
-    context: Context,
-    override val coroutineContext: CoroutineContext,
-    private val book: BookDisplay,
-    private val positionProcessor: PositionProcessor,
-    private val showOverview: MutableStateFlow<Boolean>
-) : LinearLayout(context), CoroutineScope {
-    private val inflater =
-        context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-    private val binding = OverviewViewBinding.inflate(inflater, this, true)
 
-    private var isInitialized = false
-
-    init {
-        launch {
-            showOverview.collect {
-                if (it && !isInitialized) {
-                    initialize()
-                }
-
-                visibility = if (it) {
-                    VISIBLE
-                } else {
-                    GONE
-                }
-            }
-        }
-    }
+class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineScope {
+    override val coroutineContext = lifecycleScope.coroutineContext
+    private lateinit var binding: OverviewFragmentBinding
 
     private var nextScrollNotUser = false
+    private lateinit var data: Data
+    private val book: StateFlow<BookDisplay> by lazy { data.display }
+    private val position: PositionProcessor by lazy { data.position }
     private lateinit var layoutManager: LinearLayoutManager
 
-
-    private fun initialize() {
-        binding.seeker.max = book.pageCount() - 1
+    override fun onViewCreatedAndDataReceived(
+        view: View,
+        savedInstanceState: Bundle?,
+        data: Data
+    ) {
+        binding = OverviewFragmentBinding.bind(view)
+        this.data = data
 
         binding.seeker.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    val newPosition = BookPosition.fromPageIndex(book, progress)
+                    val newPosition = BookPosition.fromPageIndex(book.value, progress)
                     if (newPosition == null) {
                         Timber.w("Null newPosition: %s", progress)
                         return
                     }
-                    positionProcessor.set(binding.seeker, newPosition)
+                    position.set(binding.seeker, newPosition)
                 }
             }
 
@@ -75,15 +58,6 @@ class OverviewView(
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
 
         })
-
-        val pagesAdapter = OverviewPagesAdapter(book)
-        layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
-        binding.pages.layoutManager = layoutManager
-        binding.pages.adapter = pagesAdapter
-        LinearSnapHelper().attachToRecyclerView(binding.pages)
-
-        updateSeeker(positionProcessor.position)
-        updatePages(positionProcessor.position)
 
         binding.pages.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
             private val detector =
@@ -96,7 +70,9 @@ class OverviewView(
                         val child = binding.pages.findChildViewUnder(e.x, e.y) ?: return false
                         val pageIndex = binding.pages.getChildAdapterPosition(child)
 
-                        if (pageIndex != positionProcessor.position.pageIndex(book)) {
+                        val book = book.value
+
+                        if (pageIndex != position.value.pageIndex(book)) {
                             // User tapped one of the pages on the side, not the center page
                             return false
                         }
@@ -124,44 +100,52 @@ class OverviewView(
                     return
                 }
 
-                val newPosition = BookPosition.fromPageIndex(book, pageIndex)!!
-                positionProcessor.set(binding.pages, newPosition)
+                val newPosition = BookPosition.fromPageIndex(book.value, pageIndex)!!
+                position.set(binding.pages, newPosition)
             }
         })
 
         launch {
-            positionProcessor.events.collect {
-                when (it.changer) {
-                    binding.pages.hashCode() -> {
-                        updateSeeker(it.position)
-                    }
+            data.display.collectLatest { book ->
+                binding.seeker.max = book.pageCount() - 1
 
-                    binding.seeker.hashCode() -> {
-                        updatePages(it.position)
-                    }
+                val pagesAdapter = OverviewPagesAdapter(book)
+                layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+                binding.pages.layoutManager = layoutManager
+                binding.pages.adapter = pagesAdapter
+                LinearSnapHelper().attachToRecyclerView(binding.pages)
 
-                    else -> {
-                        updateSeeker(it.position)
-                        updatePages(it.position)
+                position.events.collect {
+                    when (it.changer) {
+                        binding.pages.hashCode() -> {
+                            updateSeeker(it.position)
+                        }
+
+                        binding.seeker.hashCode() -> {
+                            updatePages(it.position)
+                        }
+
+                        else -> {
+                            updateSeeker(it.position)
+                            updatePages(it.position)
+                        }
                     }
                 }
             }
         }
-
-        isInitialized = true
     }
 
     private fun updateSeeker(position: BookPosition) {
-        binding.seeker.progress = position.pageIndex(book)
+        binding.seeker.progress = position.pageIndex(book.value)
     }
 
     private fun updatePages(position: BookPosition) {
         nextScrollNotUser = true
-        layoutManager.scrollToPosition(position.pageIndex(book))
+        layoutManager.scrollToPosition(position.pageIndex(book.value))
     }
 
-    private fun exitTo(position: BookPosition) {
-        positionProcessor.set(this, position)
-        showOverview.value = false
+    private fun exitTo(pos: BookPosition) {
+        position.set(this, pos)
+        data.toggleOverview()
     }
 }

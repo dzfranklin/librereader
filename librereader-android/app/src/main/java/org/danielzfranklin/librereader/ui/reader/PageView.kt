@@ -13,7 +13,6 @@ import androidx.core.graphics.withClip
 import androidx.core.graphics.withTranslation
 import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.model.BookStyle
-import org.danielzfranklin.librereader.ui.reader.pagesView.PagesView
 import kotlin.math.round
 import kotlin.math.roundToInt
 
@@ -22,7 +21,6 @@ class PageView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : androidx.appcompat.widget.AppCompatTextView(context, attrs, defStyleAttr) {
-    var manager: PagesView? = null
 
     init {
         focusable = FOCUSABLE
@@ -30,10 +28,13 @@ class PageView @JvmOverloads constructor(
         setTextIsSelectable(true)
     }
 
+    var propagateTouchEventsTo: ((event: MotionEvent?) -> Boolean)? = null
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        manager?.gestureDetector?.onTouchEvent(event)
-        return super.onTouchEvent(event)
+        val superResult = super.onTouchEvent(event)
+        val result = propagateTouchEventsTo?.let { it(event) } ?: false
+        return superResult || result
     }
 
     fun displaySpan(span: Spanned?) {

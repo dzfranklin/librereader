@@ -1,73 +1,108 @@
-package org.danielzfranklin.librereader.ui.reader.pagesView
+package org.danielzfranklin.librereader.ui.reader.pages
 
 import android.content.Context
 import android.util.DisplayMetrics
 import android.view.GestureDetector
 import android.view.MotionEvent
-import android.view.View
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import timber.log.Timber
+import kotlin.coroutines.CoroutineContext
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
 class PagesGestureDetector(
+    override val coroutineContext: CoroutineContext,
     context: Context,
-    private val listener: Listener
-) : GestureDetector(context, listener) {
-    constructor(
-        context: Context,
-        turnState: MutableStateFlow<TurnState>,
-        showOverview: MutableStateFlow<Boolean>,
-        pageWidth: Float
-    ) : this(
-        context,
-        Listener(turnState, showOverview, pageWidth, context.resources.displayMetrics)
-    )
-
-    fun enableTurnBackwards() {
-        listener.turnBackwardsEnabled = true
+    pageWidth: Float,
+    val listener: Listener
+) : CoroutineScope {
+    /**
+     * Guarantee: No callback will ever be executed while another callback is executing
+     */
+    interface Listener {
+        fun onShowOverview()
+        fun onBeginTurnBack()
+        fun onBeginTurnForward()
+        fun onCancelTurnBack(fromPercent: Float)
+        fun onCancelTurnForward(fromPercent: Float)
+        fun onCompleteTurnBack(fromPercent: Float)
+        fun onCompleteTurnForward(fromPercent: Float)
+        fun onTurnBackwards(percent: Float)
+        fun onTurnForwards(percent: Float)
     }
 
-    fun disableTurnBackwards() {
-        listener.turnBackwardsEnabled = false
-    }
+    private val turnState = MutableStateFlow<TurnState>(TurnState.Initial)
+    private val internalListener =
+        InternalListener(this, turnState, pageWidth, context.resources.displayMetrics)
+    private val detector = GestureDetector(context, internalListener)
 
-    fun enableTurnForwards() {
-        listener.turnForwardsEnabled = true
-    }
-
-    fun disableTurnForwards() {
-        listener.turnForwardsEnabled = false
-    }
-
-    fun onWindowVisibilityChanged(visibility: Int) {
-        if (visibility == View.GONE || visibility == View.INVISIBLE) {
-            listener.autoComplete()
+    init {
+        launch {
+            turnState.collect {
+                Timber.d("Detector found %s", it)
+                when (it) {
+                    TurnState.Initial -> Unit
+                    TurnState.BeganTurnBack -> listener.onBeginTurnBack()
+                    TurnState.BeganTurnForward -> listener.onBeginTurnForward()
+                    is TurnState.CancellingTurnBack -> listener.onCancelTurnBack(it.fromPercent)
+                    is TurnState.CancellingTurnForward -> listener.onCancelTurnForward(it.fromPercent)
+                    is TurnState.CompletingTurnBack -> listener.onCompleteTurnBack(it.fromPercent)
+                    is TurnState.CompletingTurnForward -> listener.onCompleteTurnForward(it.fromPercent)
+                    is TurnState.TurningBackwards -> listener.onTurnBackwards(it.percent)
+                    is TurnState.TurningForwards -> listener.onTurnForwards(it.percent)
+                }
+            }
         }
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (super.onTouchEvent(event)) {
+    fun enableTurnBackwards() {
+        internalListener.turnBackwardsEnabled = true
+    }
+
+    fun disableTurnBackwards() {
+        internalListener.turnBackwardsEnabled = false
+    }
+
+    fun enableTurnForwards() {
+        internalListener.turnForwardsEnabled = true
+    }
+
+    fun disableTurnForwards() {
+        internalListener.turnForwardsEnabled = false
+    }
+
+    fun pause() {
+        internalListener.autoComplete()
+    }
+
+    fun resume() {}
+
+    fun onTouchEvent(event: MotionEvent?): Boolean {
+        if (detector.onTouchEvent(event)) {
             return true
         }
 
         if (event?.action == MotionEvent.ACTION_UP) {
-            return listener.autoComplete()
+            return internalListener.autoComplete()
         }
 
         return false
     }
 
-    class Listener(
+    private class InternalListener(
+        private val manager: PagesGestureDetector,
         private val turnState: MutableStateFlow<TurnState>,
-        private val showOverview: MutableStateFlow<Boolean>,
         private val pageWidth: Float,
         displayMetrics: DisplayMetrics
     ) : GestureDetector.SimpleOnGestureListener() {
         var turnBackwardsEnabled = true
         var turnForwardsEnabled = true
 
-        /**
-         * @return If an autocompletion occurred
-         */
+        /** @return If an autocompletion occurred */
         fun autoComplete(): Boolean {
             return when (val currentState = turnState.value) {
                 is TurnState.TurningBackwards -> {
@@ -107,7 +142,7 @@ class PagesGestureDetector(
             } else if (turnForwardsEnabled && event.x > tapForwardCutoff) {
                 turnForward()
             } else {
-                showOverview.value = true
+                manager.listener.onShowOverview()
             }
 
             return false
@@ -214,6 +249,33 @@ class PagesGestureDetector(
             }
 
             return true
+        }
+    }
+
+    private sealed class TurnState {
+        object Initial : TurnState()
+
+        object BeganTurnBack : TurnState()
+        object BeganTurnForward : TurnState()
+
+        class TurningBackwards(percent: Float) : TurnState() {
+            val percent = clampPercent(percent)
+        }
+
+        class TurningForwards(percent: Float) : TurnState() {
+            val percent = clampPercent(percent)
+        }
+
+        data class CompletingTurnBack(val fromPercent: Float) : TurnState()
+        data class CompletingTurnForward(val fromPercent: Float) : TurnState()
+
+        data class CancellingTurnBack(val fromPercent: Float) : TurnState()
+        data class CancellingTurnForward(val fromPercent: Float) : TurnState()
+
+        companion object {
+            private fun clampPercent(percent: Float): Float {
+                return max(0f, min(percent, 1f))
+            }
         }
     }
 }

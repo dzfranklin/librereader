@@ -1,164 +1,101 @@
 package org.danielzfranklin.librereader.ui.reader
 
+import android.content.Context
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.LayoutRes
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.*
 import nl.siegmann.epublib.domain.Book
-import org.danielzfranklin.librereader.databinding.ReaderFragmentBinding
 import org.danielzfranklin.librereader.model.BookID
-import org.danielzfranklin.librereader.model.BookMeta
+import org.danielzfranklin.librereader.model.BookStyle
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookPageDisplay
-import org.danielzfranklin.librereader.ui.reader.overviewView.OverviewView
-import org.danielzfranklin.librereader.ui.reader.pagesView.PagesView
-import timber.log.Timber
+import kotlin.coroutines.coroutineContext
 
-class ReaderFragment : Fragment(R.layout.reader_fragment), View.OnLayoutChangeListener,
-    CoroutineScope {
+abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
+    Fragment(contentLayoutId) {
 
-    override val coroutineContext = lifecycleScope.coroutineContext
+    abstract fun onViewCreatedAndDataReceived(
+        view: View,
+        savedInstanceState: Bundle?,
+        data: Data
+    )
 
-    private lateinit var binding: ReaderFragmentBinding
-    private lateinit var bookId: BookID
-    private val model: ReaderViewModel by viewModels { ReaderViewModel.Factory(bookId) }
-
-    private var rootLaidOut = false
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        super.onCreateView(inflater, container, savedInstanceState)
-
-        bookId = requireArguments().getParcelable(ARG_BOOK_ID) ?: throw IllegalArgumentException(
-            "Missing argument ARG_BOOK_ID"
-        )
-
-        binding = ReaderFragmentBinding.inflate(layoutInflater, container, false)
-
-        binding.root.addOnLayoutChangeListener(this)
-
-        launch {
-            model.state.collect {
-                when (it) {
-                    // NOTE: We make pagesParent invisible instead of gone so it gets laid out
-                    is ReaderViewModel.LoadState.Loading -> {
-                        binding.pagesParent.visibility = View.INVISIBLE
-                        binding.loadingProgress.visibility = View.VISIBLE
-                        binding.loadingImage.visibility = View.GONE
-                    }
-                    is ReaderViewModel.LoadState.LoadingHasMeta -> {
-                        binding.pagesParent.visibility = View.INVISIBLE
-                        binding.loadingProgress.visibility = View.VISIBLE
-                        binding.loadingImage.visibility = View.VISIBLE
-                        binding.loadingImage.setImageBitmap(it.meta.cover)
-                    }
-                    is ReaderViewModel.LoadState.Loaded -> {
-                        binding.pagesParent.visibility = View.VISIBLE
-                        binding.loadingProgress.visibility = View.GONE
-                        binding.loadingImage.visibility = View.GONE
-
-                        if (rootLaidOut) {
-                            attach(it)
-                        } else {
-                            Timber.i("Skipping recreating pages view because onLayoutChange will do so later")
-                        }
-                    }
-                }
-            }
-        }
-
-        return binding.root
-    }
-
-    override fun onLayoutChange(
-        v: View?,
-        left: Int,
-        top: Int,
-        right: Int,
-        bottom: Int,
-        oldLeft: Int,
-        oldTop: Int,
-        oldRight: Int,
-        oldBottom: Int
+    data class Data(
+        private val underlying: DisplayIndependentData,
+        val display: StateFlow<BookDisplay>
     ) {
-        rootLaidOut = true
+        val id = underlying.id
+        val position = underlying.position
+        val inOverview = underlying.inOverview
 
-        if (left == oldLeft && top == oldTop && right == oldRight && bottom == oldBottom) {
-            return
-        }
+        fun toggleOverview() = underlying.toggleOverview()
 
-        val cached = model.state.value
-        if (cached is ReaderViewModel.LoadState.Loaded) {
-            attach(cached)
-        }
-    }
-
-    private fun attach(state: ReaderViewModel.LoadState.Loaded) {
-        display(state.meta, state.epub, state.positionProcessor)
-
-        launch {
-            var prevStyle = state.meta.style // Since we display immediately, then get a flow
-            state.styleUpdates
-                .collectLatest {
-                    if (it != prevStyle) {
-                        display(state.meta.copy(style = it), state.epub, state.positionProcessor)
-                        prevStyle = it
+        companion object {
+            suspend fun from(data: DisplayIndependentData, context: Context, parent: ViewGroup): Data {
+                val display = data.style
+                    .map { style ->
+                        val pageDisplay = BookPageDisplay.fitParent(parent, style)
+                        BookDisplay(context, data.id, data.epub, pageDisplay)
                     }
-                }
-        }
-    }
-
-    private fun display(meta: BookMeta, epub: Book, positionProcessor: PositionProcessor) {
-        binding.pagesParent.removeAllViews()
-
-        val pageDisplay = BookPageDisplay.fitParent(binding.pagesParent, meta.style)
-        val book = BookDisplay(requireContext(), model.bookId, epub, pageDisplay)
-
-        binding.pagesParent.addView(
-            PagesView(
-                requireContext(),
-                coroutineContext,
-                book,
-                positionProcessor,
-                model.showOverview
-            ), layoutParams
-        )
-
-        binding.pagesParent.addView(
-            OverviewView(
-                requireContext(),
-                coroutineContext,
-                book,
-                positionProcessor,
-                model.showOverview
-            ), layoutParams
-        )
-    }
-
-    companion object {
-        fun create(bookId: BookID): ReaderFragment {
-            val fragment = ReaderFragment()
-            fragment.arguments = Bundle().apply {
-                putParcelable(ARG_BOOK_ID, bookId)
+                    .stateIn(CoroutineScope(coroutineContext))
+                return Data(data, display)
             }
-            return fragment
         }
+    }
 
-        private const val ARG_BOOK_ID = "ARG_BOOK_ID"
+    private var data: Data? = null
+    private var platform: Platform? = null
 
-        private val layoutParams = ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+    private data class Platform(
+        val view: View,
+        val savedInstanceState: Bundle?
+    )
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        synchronized(this) {
+            val cachedData = data
+            if (cachedData != null) {
+                onViewCreatedAndDataReceived(view, savedInstanceState, cachedData)
+            } else {
+                platform = Platform(view, savedInstanceState)
+            }
+        }
+    }
+
+    fun onData(newData: Data) {
+        synchronized(this) {
+            val cachedPlatform = platform
+            if (cachedPlatform != null) {
+                onViewCreatedAndDataReceived(
+                    cachedPlatform.view,
+                    cachedPlatform.savedInstanceState,
+                    newData
+                )
+            } else {
+                data = newData
+            }
+        }
+    }
+
+    data class DisplayIndependentData(
+        val id: BookID,
+        val style: StateFlow<BookStyle>,
+        val position: PositionProcessor,
+        val epub: Book,
+        private val _inOverview: MutableStateFlow<Boolean>
+    ) {
+        val inOverview = _inOverview.asStateFlow()
+
+        fun toggleOverview() {
+            var prev = _inOverview.value
+            while (!_inOverview.compareAndSet(prev, !prev)) {
+                prev = _inOverview.value
+            }
+        }
     }
 }

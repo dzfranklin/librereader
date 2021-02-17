@@ -60,6 +60,11 @@ class BookDao(private val context: Context, private val database: Database) {
                 )
             }
 
+    suspend fun getPosition(id: BookID): BookPosition = withContext(Dispatchers.IO) {
+        val data = queries.getPosition(id.toString()).executeAsOne()
+        BookPosition(id, data.percent, data.sectionIndex, data.charIndex)
+    }
+
     private fun metaMapper(
         idString: String, title: String, coverBgColor: Int, coverTextColor: Int, percent: Float,
         sectionIndex: Int, charIndex: Int, textColor: Int, bgColor: Int, typefaceName: String,

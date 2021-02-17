@@ -1,20 +1,17 @@
 package org.danielzfranklin.librereader.ui.reader
 
+import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import nl.siegmann.epublib.domain.Book
 import org.danielzfranklin.librereader.model.BookID
-import org.danielzfranklin.librereader.model.BookMeta
-import org.danielzfranklin.librereader.model.BookStyle
 import org.danielzfranklin.librereader.repo.Repo
-import timber.log.Timber
 
-class ReaderViewModel(val bookId: BookID) : ViewModel(), CoroutineScope {
+class ReaderViewModel(val id: BookID) : ViewModel(), CoroutineScope {
     override val coroutineContext = viewModelScope.coroutineContext
 
     class Factory(private val bookId: BookID) : ViewModelProvider.Factory {
@@ -29,49 +26,35 @@ class ReaderViewModel(val bookId: BookID) : ViewModel(), CoroutineScope {
 
     private val repo = Repo.get()
 
-    sealed class LoadState {
-        object Loading : LoadState()
-        data class LoadingHasMeta(val meta: BookMeta) : LoadState()
-        data class Loaded(
-            val meta: BookMeta,
-            val styleUpdates: Flow<BookStyle>,
-            val epub: Book,
-            val positionProcessor: PositionProcessor
-        ) : LoadState()
+    private val inOverview = MutableStateFlow(false)
+
+    sealed class Progress {
+        object Loading : Progress()
+        data class LoadingHasCover(val cover: Bitmap) : Progress()
+        data class Loaded(val data: ReaderFragment.DisplayIndependentData) : Progress()
     }
 
-    private fun loadedState(prev: LoadState.LoadingHasMeta, epub: Book) = LoadState.Loaded(
-        prev.meta,
-        repo.getBookStyleFlow(bookId),
-        epub,
-        PositionProcessor(coroutineContext, prev.meta.position)
-    )
+    private val _progress = MutableStateFlow<Progress>(Progress.Loading)
 
-    private val _state = MutableStateFlow<LoadState>(LoadState.Loading)
-    val state = _state.asStateFlow()
+    /** Guarantee: Will never change after Loaded */
+    val progress = _progress.asStateFlow()
 
     init {
         launch {
-            val meta = repo.getBook(bookId)
-            _state.value = LoadState.LoadingHasMeta(meta)
-        }
-
-        launch {
-            val epub = repo.getEpub(bookId)
-            val current = _state.value
-            if (current is LoadState.LoadingHasMeta) {
-                _state.value = loadedState(current, epub)
-            } else {
-                Timber.w("Got EPUB before meta, waiting")
-                _state.collect {
-                    if (it is LoadState.LoadingHasMeta) {
-                        _state.value = loadedState(it, epub)
-                        cancel("done")
-                    }
-                }
-            }
+            val cover = async { repo.getCover(id) }
+            val epub = async { repo.getEpub(id) }
+            val position = async { repo.getPosition(id) }
+            val style = async { repo.getBookStyleFlow(id).stateIn(this@launch) }
+            _progress.value = Progress.LoadingHasCover(cover.await())
+            _progress.value = Progress.Loaded(
+                ReaderFragment.DisplayIndependentData(
+                    id,
+                    style.await(),
+                    PositionProcessor(coroutineContext, position.await()),
+                    epub.await(),
+                    inOverview
+                )
+            )
         }
     }
-
-    val showOverview = MutableStateFlow(false)
 }
