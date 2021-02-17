@@ -1,6 +1,7 @@
 package org.danielzfranklin.librereader.repo
 
 import android.content.Context
+import com.squareup.sqldelight.android.AndroidSqliteDriver
 import com.squareup.sqldelight.runtime.coroutines.asFlow
 import com.squareup.sqldelight.runtime.coroutines.mapToList
 import com.squareup.sqldelight.runtime.coroutines.mapToOneOrNull
@@ -11,7 +12,7 @@ import kotlinx.coroutines.withContext
 import org.danielzfranklin.librereader.Database
 import org.danielzfranklin.librereader.model.*
 
-class BookDao(private val context: Context, database: Database) {
+class BookDao(database: Database) {
     private val queries = database.dbBookQueries
 
     fun list(): Flow<List<BookMeta>> =
@@ -74,5 +75,14 @@ class BookDao(private val context: Context, database: Database) {
         val typeface = BookTypeface.fromName(typefaceName)!!
         val style = BookStyle(textColor, bgColor, typeface, textSize, padding)
         return BookMeta(id, position, style, title, coverBgColor, coverTextColor)
+    }
+
+    companion object {
+        fun create(context: Context): BookDao {
+            val dbDriver = AndroidSqliteDriver(Database.Schema, context, DB_FILE)
+            return BookDao(Database(dbDriver))
+        }
+
+        const val DB_FILE = "main.db"
     }
 }

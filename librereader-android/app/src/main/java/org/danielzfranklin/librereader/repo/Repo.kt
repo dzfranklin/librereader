@@ -2,7 +2,6 @@ package org.danielzfranklin.librereader.repo
 
 import android.graphics.Bitmap
 import android.net.Uri
-import com.squareup.sqldelight.android.AndroidSqliteDriver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -10,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import nl.siegmann.epublib.domain.Book
 import nl.siegmann.epublib.epub.EpubReader
-import org.danielzfranklin.librereader.Database
 import org.danielzfranklin.librereader.LibreReaderApplication
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.model.BookMeta
@@ -21,9 +19,7 @@ import java.util.zip.ZipInputStream
 class Repo(private val app: LibreReaderApplication) : CoroutineScope {
     override val coroutineContext = Job()
 
-    private val dbDriver = AndroidSqliteDriver(Database.Schema, app, DB_FILE)
-    private val database = Database(dbDriver)
-    private val bookDao = BookDao(app, database)
+    private val bookDao = BookDao.create(app)
 
     fun listBooks(): Flow<List<BookMeta>> = bookDao.list()
 
@@ -67,7 +63,5 @@ class Repo(private val app: LibreReaderApplication) : CoroutineScope {
         fun get(): Repo {
             return instance ?: throw IllegalStateException("Repo not initialized")
         }
-
-        private const val DB_FILE = "main.db"
     }
 }
