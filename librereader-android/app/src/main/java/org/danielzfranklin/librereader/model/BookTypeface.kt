@@ -7,7 +7,7 @@ import androidx.annotation.StringRes
 import org.danielzfranklin.librereader.R
 import timber.log.Timber
 
-class BookTypeface(
+data class BookTypeface(
     val id: String,
     @StringRes private val displayName: Int,
     private val resourceId: Int
