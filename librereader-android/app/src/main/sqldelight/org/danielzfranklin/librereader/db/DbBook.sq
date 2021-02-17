@@ -37,8 +37,8 @@ listTitleOrder:
         textSizeSp,
         paddingDp
     FROM dbBook
-    JOIN dbBookPosition
-    JOIN dbBookStyle
+    INNER JOIN dbBookPosition ON dbBook.id == dbBookPosition.id
+    INNER JOIN dbBookStyle ON dbBook.id == dbBookStyle.id
     ORDER BY title ASC;
 
 updatePosition:
