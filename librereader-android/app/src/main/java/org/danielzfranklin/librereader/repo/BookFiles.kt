@@ -6,14 +6,20 @@ import android.graphics.ImageDecoder
 import org.danielzfranklin.librereader.model.BookID
 import timber.log.Timber
 import java.io.File
+import java.io.FileNotFoundException
 
 class BookFiles private constructor(dir: File) {
     val epubFile = File(dir, EPUB_FILENAME)
     val coverFile = File(dir, COVER_FILENAME)
 
-    fun coverBitmap(): Bitmap {
+    fun coverBitmap(): Bitmap? {
         val source = ImageDecoder.createSource(coverFile)
-        return ImageDecoder.decodeBitmap(source)
+        return try {
+            ImageDecoder.decodeBitmap(source)
+        } catch (e: FileNotFoundException) {
+            Timber.w(e, "Cover not found")
+            null
+        }
     }
 
     companion object {

@@ -73,7 +73,7 @@ class BookDao(private val context: Context, private val database: Database) {
         val position = BookPosition(id, percent, sectionIndex, charIndex)
         val typeface = BookTypeface.fromName(typefaceName)!!
         val style = BookStyle(textColor, bgColor, typeface, textSize, padding)
-        val cover = BookFiles.open(context, id)!!.coverBitmap()
+        val cover = BookFiles.open(context, id)!!.coverBitmap()!!
         return BookMeta(id, position, style, cover, title, coverBgColor, coverTextColor)
     }
 }
