@@ -25,13 +25,13 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
     Fragment(contentLayoutId) {
 
     fun switchToPages() {
-        (requireActivity() as? ReaderActivity)?.switchToPages() ?:
-            Timber.w("Not switching to pages as not attached to ReaderActivity")
+        (requireActivity() as? ReaderActivity)?.switchToPages()
+            ?: Timber.w("Not switching to pages as not attached to ReaderActivity")
     }
 
     fun switchToOverview() {
-        (requireActivity() as? ReaderActivity)?.switchToOverview() ?:
-            Timber.w("Not switching to overview as not attached to ReaderActivity")
+        (requireActivity() as? ReaderActivity)?.switchToOverview()
+            ?: Timber.w("Not switching to overview as not attached to ReaderActivity")
     }
 
     abstract fun onViewCreatedAndDataReceived(
@@ -48,7 +48,11 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
         val position = underlying.position
 
         companion object {
-            suspend fun from(data: DisplayIndependentData, context: Context, parent: ViewGroup): Data {
+            suspend fun from(
+                data: DisplayIndependentData,
+                context: Context,
+                parent: ViewGroup
+            ): Data {
                 val display = data.style
                     .map { style ->
                         withContext(Dispatchers.Default) {
