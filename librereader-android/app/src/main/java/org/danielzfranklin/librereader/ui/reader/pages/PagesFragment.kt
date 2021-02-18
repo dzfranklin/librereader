@@ -34,7 +34,7 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
     private val position: PositionProcessor by lazy { data.position }
     private val book: StateFlow<BookDisplay> by lazy { data.display }
     private lateinit var pages: Pages
-    private lateinit var viewJob: Job
+    private lateinit var visibleJob: Job
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreatedAndDataReceived(
@@ -48,9 +48,14 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
         binding.pages.setOnTouchListener { _, event ->
             gestureDetector?.onTouchEvent(event) ?: false
         }
+    }
 
-        launch {
-            Timber.d("Laying out %s", data.id)
+    // TODO: Use state machine?
+
+    override fun onResume() {
+        gestureDetector?.resume()
+
+        visibleJob = launch {
 
             gestureDetector = PagesGestureDetector(
                 coroutineContext,
@@ -89,23 +94,14 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
                 }
             }
         }
-    }
 
-    // TODO: Use state machine?
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        viewJob.cancel(CancellationException("onDestroyView"))
+        super.onResume()
     }
 
     override fun onPause() {
-        gestureDetector?.pause()
         super.onPause()
-    }
-
-    override fun onResume() {
-        gestureDetector?.resume()
-        super.onResume()
+        gestureDetector?.pause()
+        visibleJob.cancel(CancellationException("onPause"))
     }
 
     override fun onShowOverview() {

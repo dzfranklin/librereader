@@ -34,7 +34,7 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
     private val book: StateFlow<BookDisplay> by lazy { data.display }
     private val position: PositionProcessor by lazy { data.position }
     private lateinit var layoutManager: LinearLayoutManager
-    private lateinit var viewJob: Job
+    private lateinit var visibleJob: Job
 
     override fun onViewCreatedAndDataReceived(
         view: View,
@@ -108,19 +108,27 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
             }
         })
 
-        viewJob = launch {
+        binding.styleButton.setOnClickListener {
+            exitTo(position.value, true)
+        }
+
+        layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+        binding.pages.layoutManager = layoutManager
+        LinearSnapHelper().attachToRecyclerView(binding.pages)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        visibleJob = launch {
             data.display.collectLatest { book ->
                 binding.seeker.max = book.pageCount() - 1
 
                 val pagesAdapter = OverviewPagesAdapter(book)
-                layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
-                binding.pages.layoutManager = layoutManager
                 binding.pages.adapter = pagesAdapter
-                LinearSnapHelper().attachToRecyclerView(binding.pages)
 
                 var initialPosition: BookPosition? = position.value
                 updateSeeker(initialPosition!!)
-                updatePages(initialPosition!!)
+                updatePages(initialPosition)
 
                 position.events.collect {
                     when (it.changer) {
@@ -147,9 +155,9 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        viewJob.cancel(CancellationException("onDestroyView"))
+    override fun onPause() {
+        super.onPause()
+        visibleJob.cancel(CancellationException("onPause"))
     }
 
     private fun updateSeeker(position: BookPosition) {
