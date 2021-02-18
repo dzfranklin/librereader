@@ -66,6 +66,9 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
 
             data.display.collectLatest { book ->
                 var initialPosition: BookPosition? = position.value
+                if (::pages.isInitialized) {
+                    removePages()
+                }
                 pages = createPages(book, initialPosition!!)
 
                 position.events.collect {
@@ -86,6 +89,9 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
                     }
 
                     if (it.changer != this@PagesFragment.hashCode() && it.position != initialPosition) {
+                        if (::pages.isInitialized) {
+                            removePages()
+                        }
                         pages = createPages(book, it.position)
 
                         // if we re-visit this page later we need to re-display
@@ -220,6 +226,12 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
         pages.prev.setTextIsSelectable(false)
         pages.next.setTextIsSelectable(false)
         pages.current.setTextIsSelectable(false)
+    }
+
+    private fun removePages() {
+        binding.pages.removeView(pages.prev)
+        binding.pages.removeView(pages.current)
+        binding.pages.removeView(pages.next)
     }
 
     private fun createPages(book: BookDisplay, position: BookPosition): Pages {
