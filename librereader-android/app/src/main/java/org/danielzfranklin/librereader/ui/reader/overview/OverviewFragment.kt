@@ -118,6 +118,10 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
                 binding.pages.adapter = pagesAdapter
                 LinearSnapHelper().attachToRecyclerView(binding.pages)
 
+                var initialPosition: BookPosition? = position.value
+                updateSeeker(initialPosition!!)
+                updatePages(initialPosition!!)
+
                 position.events.collect {
                     when (it.changer) {
                         binding.pages.hashCode() -> {
@@ -129,8 +133,13 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
                         }
 
                         else -> {
-                            updateSeeker(it.position)
-                            updatePages(it.position)
+                            if (it.position != initialPosition) {
+                                updateSeeker(it.position)
+                                updatePages(it.position)
+                            } else {
+                                // if we re-visit this page later we need to re-display
+                                initialPosition = null
+                            }
                         }
                     }
                 }
