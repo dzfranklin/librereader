@@ -97,7 +97,7 @@ class PageView @JvmOverloads constructor(
 
     @SuppressLint("WrongCall")
     private fun drawText(canvas: Canvas) {
-        canvas.drawColor(style.bgColor)
+        canvas.drawColor(style.color.bg)
         super.onDraw(canvas)
     }
 
@@ -108,7 +108,7 @@ class PageView @JvmOverloads constructor(
         // the edge
 
         canvas.withClip(0f, 0f, edge, height.toFloat()) {
-            canvas.drawColor(style.bgColor)
+            canvas.drawColor(style.color.bg)
         }
 
         canvas.withTranslation(-(width - edge), 0f) {

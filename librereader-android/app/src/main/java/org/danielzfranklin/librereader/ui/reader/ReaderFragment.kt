@@ -34,6 +34,11 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
             ?: Timber.w("Not switching to overview as not attached to ReaderActivity")
     }
 
+    fun switchToStylePicker() {
+        (requireActivity() as? ReaderActivity)?.switchToStylePicker() ?:
+        Timber.w("Not switching to style picker as not attached to ReaderActivity")
+    }
+
     abstract fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?,

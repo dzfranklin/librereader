@@ -12,4 +12,7 @@
         As usual, a pilot put off immediately, and rounding the Château d’If, got on board the
         vessel between Cape Morgiou and Rion island.
     </string>
+    <string name="change_style">Change style</string>
+    <string name="typeface">Typeface</string>
+    <string name="sampleLetter">A</string>
 </resources>

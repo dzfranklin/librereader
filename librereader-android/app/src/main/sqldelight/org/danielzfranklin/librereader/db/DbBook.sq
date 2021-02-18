@@ -1,4 +1,5 @@
 import java.lang.Float;
+import org.danielzfranklin.librereader.model.PresetColor;
 
 CREATE TABLE dbBook (
     id TEXT PRIMARY KEY NOT NULL,
@@ -16,8 +17,7 @@ CREATE TABLE dbBookPosition(
 
 CREATE TABLE dbBookStyle(
     id TEXT PRIMARY KEY NOT NULL REFERENCES dbBook,
-    textColor INTEGER as Int NOT NULL,
-    bgColor INTEGER as Int NOT NULL,
+    color TEXT as PresetColor NOT NULL,
     typeface TEXT NOT NULL,
     textSizeSp REAL as Float NOT NULL,
     paddingDp INTEGER as Int NOT NULL
@@ -31,8 +31,7 @@ listTitleOrder:
         percent,
         sectionIndex,
         charIndex,
-        textColor,
-        bgColor,
+        color,
         typeface,
         textSizeSp,
         paddingDp
@@ -56,8 +55,8 @@ create {
     INSERT INTO dbBookPosition(id, percent, sectionIndex, charIndex)
     VALUES (:id, 0, 0, 0);
 
-    INSERT INTO dbBookStyle(id, textColor, bgColor, typeface, textSizeSp, paddingDp)
-    VALUES (:id, :textColor, :bgColor, :typeface, :textSizeSp, :paddingDp);
+    INSERT INTO dbBookStyle(id, color, typeface, textSizeSp, paddingDp)
+    VALUES (:id, :color, :typeface, :textSizeSp, :paddingDp);
 }
 
 getStyle:

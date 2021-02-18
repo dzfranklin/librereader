@@ -6,4 +6,6 @@
     <color name="libraryBookDefaultBg">#00FFFFFF</color>
     <color name="libraryBookDefaultText">#000000</color>
     <color name="transparent">#00000000</color>
+    <color name="textBackground">#FFFFFF</color>
+    <color name="text">#000000</color>
 </resources>

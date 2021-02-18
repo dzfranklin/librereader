@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
 import com.tinder.StateMachine
@@ -16,6 +17,7 @@ import org.danielzfranklin.librereader.databinding.ReaderActivityBinding
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.ui.reader.overview.OverviewFragment
 import org.danielzfranklin.librereader.ui.reader.pages.PagesFragment
+import org.danielzfranklin.librereader.ui.reader.stylePicker.StylePickerFragment
 import org.danielzfranklin.librereader.util.find
 import timber.log.Timber
 
@@ -29,6 +31,7 @@ class ReaderActivity : AppCompatActivity(R.layout.reader_activity), CoroutineSco
         object InitializingFragments : State()
         object Pages : State()
         object Overview : State()
+        object StylePicker : State()
     }
 
     private sealed class Event {
@@ -38,14 +41,17 @@ class ReaderActivity : AppCompatActivity(R.layout.reader_activity), CoroutineSco
         object InitializedFragments : Event()
         object SwitchToOverview : Event()
         object SwitchToPages : Event()
+        object SwitchToStylePicker : Event()
     }
 
     private sealed class SideEffect {
         data class DisplayCoverWhileLoading(val cover: Bitmap) : SideEffect()
         data class ProcessData(val data: ReaderFragment.DisplayIndependentData) : SideEffect()
         data class InitializeFragments(val data: ReaderFragment.Data) : SideEffect()
-        object ShowPages : SideEffect()
-        object ShowOverview : SideEffect()
+        object HideOverviewShowPages : SideEffect()
+        object HideOverviewShowStylePicker : SideEffect()
+        object HidePagesShowOverview : SideEffect()
+        object HideStylePickerShowPages : SideEffect()
     }
 
     private val state = StateMachine.create<State, Event, SideEffect> {
@@ -74,19 +80,28 @@ class ReaderActivity : AppCompatActivity(R.layout.reader_activity), CoroutineSco
 
         state<State.InitializingFragments> {
             on<Event.InitializedFragments> {
-                transitionTo(State.Pages, SideEffect.ShowPages)
+                transitionTo(State.Pages)
             }
         }
 
         state<State.Pages> {
             on<Event.SwitchToOverview> {
-                transitionTo(State.Overview, SideEffect.ShowOverview)
+                transitionTo(State.Overview, SideEffect.HidePagesShowOverview)
             }
         }
 
         state<State.Overview> {
             on<Event.SwitchToPages> {
-                transitionTo(State.Pages, SideEffect.ShowPages)
+                transitionTo(State.Pages, SideEffect.HideOverviewShowPages)
+            }
+            on<Event.SwitchToStylePicker> {
+                transitionTo(State.Pages, SideEffect.HideOverviewShowStylePicker)
+            }
+        }
+
+        state<State.StylePicker> {
+            on<Event.SwitchToPages> {
+                transitionTo(State.Pages, SideEffect.HideStylePickerShowPages)
             }
         }
 
@@ -107,6 +122,7 @@ class ReaderActivity : AppCompatActivity(R.layout.reader_activity), CoroutineSco
     private val model: ReaderViewModel by viewModels { ReaderViewModel.Factory(bookId) }
     private lateinit var pages: PagesFragment
     private lateinit var overview: OverviewFragment
+    private lateinit var stylePicker: StylePickerFragment
 
     private fun performSideEffect(effect: SideEffect) {
         when (effect) {
@@ -126,6 +142,8 @@ class ReaderActivity : AppCompatActivity(R.layout.reader_activity), CoroutineSco
             is SideEffect.InitializeFragments -> {
                 pages = supportFragmentManager.find(PAGES_FRAGMENT) ?: PagesFragment()
                 overview = supportFragmentManager.find(OVERVIEW_FRAGMENT) ?: OverviewFragment()
+                stylePicker =
+                    supportFragmentManager.find(STYLE_PICKER_FRAGMENT) ?: StylePickerFragment()
 
                 launch {
                     listOf(async {
@@ -137,8 +155,11 @@ class ReaderActivity : AppCompatActivity(R.layout.reader_activity), CoroutineSco
                     withContext(Dispatchers.Main) {
                         supportFragmentManager.commit {
                             setReorderingAllowed(true)
-                            add(R.id.container, overview)
                             add(R.id.container, pages)
+                            add(R.id.container, overview)
+                            detach(overview)
+                            add(R.id.container, stylePicker)
+                            detach(stylePicker)
                         }
 
                         binding.progress.visibility = View.GONE
@@ -149,18 +170,20 @@ class ReaderActivity : AppCompatActivity(R.layout.reader_activity), CoroutineSco
                 }
             }
 
-            is SideEffect.ShowPages -> supportFragmentManager.commit {
-                setReorderingAllowed(true)
-                detach(overview)
-                attach(pages)
-            }
+            is SideEffect.HideOverviewShowPages -> hideShow(overview, pages)
 
-            is SideEffect.ShowOverview -> supportFragmentManager.commit {
-                setReorderingAllowed(true)
-                detach(pages)
-                attach(overview)
-            }
+            is SideEffect.HideOverviewShowStylePicker -> hideShow(overview, stylePicker)
+
+            is SideEffect.HidePagesShowOverview -> hideShow(pages, overview)
+
+            SideEffect.HideStylePickerShowPages -> hideShow(stylePicker, pages)
         }
+    }
+
+    private fun hideShow(hide: Fragment, show: Fragment) = supportFragmentManager.commit {
+        setReorderingAllowed(true)
+        detach(hide)
+        attach(show)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -191,6 +214,10 @@ class ReaderActivity : AppCompatActivity(R.layout.reader_activity), CoroutineSco
         state.transition(Event.SwitchToOverview)
     }
 
+    fun switchToStylePicker() {
+        state.transition(Event.SwitchToStylePicker)
+    }
+
     companion object {
         fun start(context: Context, bookId: BookID) =
             context.startActivity(startIntent(context, bookId))
@@ -204,5 +231,6 @@ class ReaderActivity : AppCompatActivity(R.layout.reader_activity), CoroutineSco
 
         private const val PAGES_FRAGMENT = "pages"
         private const val OVERVIEW_FRAGMENT = "overview"
+        private const val STYLE_PICKER_FRAGMENT = "stylePicker"
     }
 }

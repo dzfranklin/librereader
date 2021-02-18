@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.danielzfranklin.librereader.Database
+import org.danielzfranklin.librereader.db.DbBookStyle
 import org.danielzfranklin.librereader.model.*
 
 class BookDao(database: Database) {
@@ -35,8 +36,7 @@ class BookDao(database: Database) {
             title = meta.title,
             coverBgColor = meta.coverBgColor,
             coverTextColor = meta.coverTextColor,
-            textColor = meta.style.textColor,
-            bgColor = meta.style.bgColor,
+            color = meta.style.color,
             typeface = meta.style.typeface.id,
             textSizeSp = meta.style.textSizeInSp,
             paddingDp = meta.style.paddingInDp,
@@ -50,8 +50,7 @@ class BookDao(database: Database) {
             .map {
                 it?.let {
                     BookStyle(
-                        it.textColor,
-                        it.bgColor,
+                        it.color,
                         BookTypeface.fromName(it.typeface)!!,
                         it.textSizeSp,
                         it.paddingDp
@@ -67,20 +66,27 @@ class BookDao(database: Database) {
 
     private fun metaMapper(
         idString: String, title: String, coverBgColor: Int, coverTextColor: Int, percent: Float,
-        sectionIndex: Int, charIndex: Int, textColor: Int, bgColor: Int, typefaceName: String,
+        sectionIndex: Int, charIndex: Int, color: PresetColor, typefaceName: String,
         textSize: Float, padding: Int
     ): BookMeta {
         val id = BookID(idString)
         val position = BookPosition(id, percent, sectionIndex, charIndex)
         val typeface = BookTypeface.fromName(typefaceName)!!
-        val style = BookStyle(textColor, bgColor, typeface, textSize, padding)
+        val style = BookStyle(color, typeface, textSize, padding)
         return BookMeta(id, position, style, title, coverBgColor, coverTextColor)
     }
 
     companion object {
         fun create(context: Context): BookDao {
             val dbDriver = AndroidSqliteDriver(Database.Schema, context, DB_FILE)
-            return BookDao(Database(dbDriver))
+            return BookDao(
+                Database(
+                    dbDriver,
+                    dbBookStyleAdapter = DbBookStyle.Adapter(
+                        colorAdapter = PresetColorAdapter()
+                    )
+                )
+            )
         }
 
         const val DB_FILE = "main.db"

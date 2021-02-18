@@ -1,22 +1,20 @@
 package org.danielzfranklin.librereader.model
 
 import android.content.Context
-import android.graphics.Color
 import android.text.TextPaint
 import android.widget.TextView
 import androidx.core.view.setPadding
 import kotlin.math.roundToInt
 
 data class BookStyle(
-    val textColor: Int = Color.BLACK,
-    val bgColor: Int = Color.WHITE,
+    val color: PresetColor = PresetColor.Light,
     val typeface: BookTypeface = BookTypeface.DEFAULT,
     val textSizeInSp: Float = 10f,
     val paddingInDp: Int = 10
 ) {
     fun apply(view: TextView) {
         view.textSize = computeTextSizePixels(view.context)
-        view.setTextColor(textColor)
+        view.setTextColor(color.text)
         view.typeface = typeface.get(view.context)
         view.setPadding(computePaddingPixels(view.context))
         view.requestLayout()

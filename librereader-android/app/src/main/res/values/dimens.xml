@@ -9,4 +9,17 @@
     <dimen name="libraryBookTitlePaddingX">8dp</dimen>
     <dimen name="libraryBookMargin">5dp</dimen>
     <dimen name="libraryBookCornerRadius">8dp</dimen>
+    <dimen name="StylePickerPadding">32dp</dimen>
+    <dimen name="overviewSeekerPaddingY">16dp</dimen>
+    <dimen name="overviewHeaderMarginTop">8dp</dimen>
+    <dimen name="overviewHeaderMarginBottom">8dp</dimen>
+    <dimen name="overviewHeaderMarginEnd">16dp</dimen>
+    <dimen name="StylePickerMargin">16dp</dimen>
+    <dimen name="pageColorButtonWidth">55sp</dimen>
+    <dimen name="pageColorButtonHeight">45sp</dimen>
+    <dimen name="pageColorButtonTextSize">34sp</dimen>
+    <dimen name="pageColorButtonRadius">25sp</dimen>
+    <dimen name="pageColorButtonBorderThickness">2dp</dimen>
+    <dimen name="pageColorButtonPaddingY">10dp</dimen>
+    <dimen name="stylePickerItemMarginY">20dp</dimen>
 </resources>

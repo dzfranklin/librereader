@@ -79,7 +79,8 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
                             return false
                         }
 
-                        exitTo(BookPosition.fromPageIndex(book, pageIndex)!!)
+                        position.set(this, BookPosition.fromPageIndex(book, pageIndex)!!)
+                        switchToPages()
 
                         return true
                     }
@@ -108,7 +109,7 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
         })
 
         binding.styleButton.setOnClickListener {
-            exitTo(position.value, true)
+            switchToStylePicker()
         }
 
         layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
@@ -169,10 +170,5 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
     private fun updatePages(position: BookPosition) {
         nextScrollNotUser = true
         layoutManager.scrollToPosition(position.pageIndex(book.value))
-    }
-
-    private fun exitTo(pos: BookPosition) {
-        position.set(this, pos)
-        super.switchToPages()
     }
 }

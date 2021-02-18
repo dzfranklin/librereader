@@ -2,6 +2,7 @@ package org.danielzfranklin.librereader.model
 
 import android.text.Spanned
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
+import org.danielzfranklin.librereader.ui.reader.displayModel.BookSectionDisplay
 import kotlin.math.abs
 
 data class BookPosition(
@@ -77,6 +78,25 @@ data class BookPosition(
 
         throw IllegalArgumentException(
             "Unreachable: charIndex $charIndex outside of section $sectionIndex text"
+        )
+    }
+
+    fun page(sectionDisplay: BookSectionDisplay): Spanned {
+        if (sectionDisplay.index != sectionIndex) {
+            throw IllegalArgumentException("Position not in provided section")
+        }
+
+        var runningIndex = 0
+
+        for (page in sectionDisplay.pages()) {
+            runningIndex += page.length
+            if (charIndex < runningIndex) {
+                return page
+            }
+        }
+
+        throw IllegalArgumentException(
+            "Unreachable: charIndex $charIndex outside of provided section text"
         )
     }
 

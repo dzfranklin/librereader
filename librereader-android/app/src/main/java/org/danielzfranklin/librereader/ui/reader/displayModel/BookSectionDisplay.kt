@@ -5,6 +5,7 @@ import android.graphics.ImageDecoder
 import android.graphics.drawable.Drawable
 import android.text.*
 import androidx.core.content.ContextCompat
+import nl.siegmann.epublib.domain.Book
 import nl.siegmann.epublib.domain.Resources
 import org.danielzfranklin.librereader.R
 import org.xml.sax.XMLReader
@@ -19,13 +20,23 @@ import kotlin.math.min
 
 class BookSectionDisplay(
     private val context: Context,
-    private val book: BookDisplay,
-    index: Int
+    val index: Int,
+    private val epub: Book,
+    private val pageDisplay: BookPageDisplay,
+    private val fallbackTitle: String = "",
 ) {
-    private val ref = book.epub.spine.spineReferences[index]
+    constructor(context: Context, book: BookDisplay, index: Int) : this(
+        context,
+        index,
+        book.epub,
+        book.pageDisplay,
+        book.title
+    )
+
+    private val ref = epub.spine.spineReferences[index]!!
 
     val title
-        get() = ref.resource.title ?: book.title
+        get() = ref.resource.title ?: fallbackTitle
 
     private val text = computeText()
 
@@ -48,7 +59,7 @@ class BookSectionDisplay(
     }
 
     private fun computePageSpans(): List<Spanned> {
-        if (book.pageDisplay.width < 0 || book.pageDisplay.height < 0) {
+        if (pageDisplay.width < 0 || pageDisplay.height < 0) {
             return listOf(SpannedString(""))
         }
 
@@ -57,8 +68,8 @@ class BookSectionDisplay(
                 text,
                 0,
                 text.length,
-                book.pageDisplay.style.toPaint(context),
-                book.pageDisplay.width
+                pageDisplay.style.toPaint(context),
+                pageDisplay.width
             )
             .build()
 
@@ -69,7 +80,7 @@ class BookSectionDisplay(
         for (i in 0 until layout.lineCount) {
             val lineBottom = layout.getLineBottom(i)
 
-            val isOverHeight = lineBottom - heightToCurrent > book.pageDisplay.height
+            val isOverHeight = lineBottom - heightToCurrent > pageDisplay.height
             val isLastPage = i == layout.lineCount - 1
 
             if (isOverHeight) {
@@ -117,9 +128,9 @@ class BookSectionDisplay(
             0,
             ImageGetter(
                 context,
-                book.epub.resources,
-                book.pageDisplay.width,
-                book.pageDisplay.height
+                epub.resources,
+                pageDisplay.width,
+                pageDisplay.height
             ),
             TagHandler()
         )
@@ -178,6 +189,7 @@ class BookSectionDisplay(
             tag: String?,
             output: Editable?,
             xmlReader: XMLReader?
-        ) {}
+        ) {
+        }
     }
 }

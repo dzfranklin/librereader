@@ -4,6 +4,20 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <ImageButton
+        android:id="@+id/styleButton"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/overviewHeaderMarginTop"
+        android:layout_marginEnd="@dimen/overviewHeaderMarginEnd"
+        android:layout_marginBottom="@dimen/overviewHeaderMarginBottom"
+        android:contentDescription="@string/change_style"
+        app:layout_constraintBottom_toTopOf="@+id/pages"
+        app:layout_constraintEnd_toEndOf="@+id/pages"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_format_size" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/pages"
         android:layout_width="0dp"
@@ -11,7 +25,7 @@
         app:layout_constraintBottom_toTopOf="@id/seeker"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/styleButton" />
 
     <SeekBar
         android:id="@+id/seeker"
