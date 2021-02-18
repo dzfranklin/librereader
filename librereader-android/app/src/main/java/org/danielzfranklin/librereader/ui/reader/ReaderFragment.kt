@@ -8,6 +8,8 @@ import androidx.annotation.LayoutRes
 import androidx.fragment.app.Fragment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import nl.siegmann.epublib.domain.Book
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.model.BookStyle
@@ -38,8 +40,11 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
             suspend fun from(data: DisplayIndependentData, context: Context, parent: ViewGroup): Data {
                 val display = data.style
                     .map { style ->
-                        val pageDisplay = BookPageDisplay.fitParent(parent, style)
-                        BookDisplay(context, data.id, data.epub, pageDisplay)
+                        withContext(Dispatchers.Default) {
+                            val pageDisplay = BookPageDisplay.fitParent(parent, style)
+                            val display = BookDisplay(context, data.id, data.epub, pageDisplay)
+                            display
+                        }   
                     }
                     .stateIn(CoroutineScope(coroutineContext))
                 return Data(data, display)
