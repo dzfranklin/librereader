@@ -34,7 +34,6 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
     private val book: StateFlow<BookDisplay> by lazy { data.display }
     private val position: PositionProcessor by lazy { data.position }
     private lateinit var layoutManager: LinearLayoutManager
-    private lateinit var visibleJob: Job
 
     override fun onViewCreated(
         view: View,
@@ -117,8 +116,11 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
         LinearSnapHelper().attachToRecyclerView(binding.pages)
     }
 
-    override fun onResume() {
-        super.onResume()
+    private var visibleJob: Job? = null
+
+    override fun onResume(data: Data) {
+        this.data = data
+
         visibleJob = launch {
             data.display.collectLatest { book ->
                 binding.seeker.max = book.pageCount() - 1
@@ -157,7 +159,7 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
 
     override fun onPause() {
         super.onPause()
-        visibleJob.cancel(CancellationException("onPause"))
+        visibleJob?.cancel(CancellationException("onPause"))
     }
 
     private fun updateSeeker(position: BookPosition) {

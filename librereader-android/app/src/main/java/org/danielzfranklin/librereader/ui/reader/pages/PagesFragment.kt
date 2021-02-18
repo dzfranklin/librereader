@@ -34,7 +34,6 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
     private val position: PositionProcessor by lazy { data.position }
     private val book: StateFlow<BookDisplay> by lazy { data.display }
     private lateinit var pages: Pages
-    private lateinit var visibleJob: Job
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(
@@ -52,7 +51,11 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
 
     // TODO: Use state machine?
 
-    override fun onResume() {
+    private var visibleJob: Job? = null
+
+    override fun onResume(data: Data) {
+        this.data = data
+
         gestureDetector?.resume()
 
         visibleJob = launch {
@@ -101,14 +104,12 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
                 }
             }
         }
-
-        super.onResume()
     }
 
     override fun onPause() {
         super.onPause()
         gestureDetector?.pause()
-        visibleJob.cancel(CancellationException("onPause"))
+        visibleJob?.cancel(CancellationException("onPause"))
     }
 
     override fun onShowOverview() {

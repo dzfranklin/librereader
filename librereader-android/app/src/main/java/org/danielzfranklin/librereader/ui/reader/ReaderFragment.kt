@@ -40,6 +40,8 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
         data: Data
     )
 
+    open fun onResume(data: Data) {}
+
     data class Data(
         private val underlying: DisplayIndependentData,
         val display: StateFlow<BookDisplay>
@@ -70,6 +72,7 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
 
     private var data: Data? = null
     private var viewCreatedParams: ViewCreatedParams? = null
+    private var callOnResumeAsSoonAsDataAvailable = false
 
     private data class ViewCreatedParams(
         val view: View,
@@ -88,6 +91,18 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        synchronized(this) {
+            val cachedData = data
+            if (cachedData != null) {
+                onResume(cachedData)
+            } else {
+                callOnResumeAsSoonAsDataAvailable = true
+            }
+        }
+    }
+
     fun onData(newData: Data) {
         synchronized(this) {
             val cachedPlatform = viewCreatedParams
@@ -99,6 +114,10 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
                 )
             } else {
                 data = newData
+            }
+
+            if (callOnResumeAsSoonAsDataAvailable) {
+                onResume(newData)
             }
         }
     }
