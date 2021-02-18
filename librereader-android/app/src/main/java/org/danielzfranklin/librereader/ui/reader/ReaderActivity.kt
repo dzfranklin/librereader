@@ -97,7 +97,7 @@ class ReaderActivity : AppCompatActivity(R.layout.reader_activity), CoroutineSco
                     it.sideEffect?.let { effect -> performSideEffect(effect) }
                 }
                 is StateMachine.Transition.Invalid ->
-                    Timber.w("Invalid transition %s", it)
+                    throw IllegalStateException("Invalid transition $it")
             }
         }
     }
