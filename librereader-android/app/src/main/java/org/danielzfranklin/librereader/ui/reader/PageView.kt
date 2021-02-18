@@ -25,7 +25,11 @@ class PageView @JvmOverloads constructor(
     init {
         focusable = FOCUSABLE
         scrollIndicators = 0
-        setTextIsSelectable(true)
+        post {
+            // NOTE: This involves measuring the text layout, and as such is expensive
+            // so we defer it to after the first render
+            setTextIsSelectable(true)
+        }
     }
 
     var propagateTouchEventsTo: ((event: MotionEvent?) -> Boolean)? = null
