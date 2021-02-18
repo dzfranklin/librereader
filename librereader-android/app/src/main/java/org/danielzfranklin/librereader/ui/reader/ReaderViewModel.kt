@@ -5,9 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.repo.Repo
 
@@ -26,35 +26,32 @@ class ReaderViewModel(val id: BookID) : ViewModel(), CoroutineScope {
 
     private val repo = Repo.get()
 
-    private val inOverview = MutableStateFlow(false)
+    data class Loading(
+        val cover: Deferred<Bitmap>,
+        val data: Deferred<ReaderFragment.DisplayIndependentData>,
+    )
 
-    sealed class Progress {
-        object Loading : Progress()
-        data class LoadingHasCover(val cover: Bitmap) : Progress()
-        data class Loaded(val data: ReaderFragment.DisplayIndependentData) : Progress()
-    }
+    var loading: Loading? = null
+    fun load(): Loading {
+        val cache = loading
+        if (cache != null) return cache
 
-    private val _progress = MutableStateFlow<Progress>(Progress.Loading)
+        val cover = async { repo.getCover(id)!! }
 
-    /** Guarantee: Will never change after Loaded */
-    val progress = _progress.asStateFlow()
+        val data = async {
+            val epub = async { repo.getEpub(id)!! }
+            val position = async { repo.getPosition(id)!! }
 
-    init {
-        launch {
-            val cover = async { repo.getCover(id) }
-            val epub = async { repo.getEpub(id) }
-            val position = async { repo.getPosition(id) }
-            val style = async { repo.getBookStyleFlow(id).stateIn(this@launch) }
-            _progress.value = Progress.LoadingHasCover(cover.await()!!)
-            _progress.value = Progress.Loaded(
-                ReaderFragment.DisplayIndependentData(
-                    id,
-                    style.await().map { it!! }.stateIn(this),
-                    PositionProcessor(coroutineContext, position.await()!!),
-                    epub.await()!!,
-                    inOverview
-                )
+            ReaderFragment.DisplayIndependentData(
+                id,
+                repo.getBookStyleFlow(id).map { it!! },
+                PositionProcessor(this@ReaderViewModel.coroutineContext, position.await()),
+                epub.await()
             )
         }
+
+        val result = Loading(cover, data)
+        loading = result
+        return result
     }
 }

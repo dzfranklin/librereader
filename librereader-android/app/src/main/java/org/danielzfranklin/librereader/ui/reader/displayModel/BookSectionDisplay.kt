@@ -43,6 +43,10 @@ class BookSectionDisplay(
         }
     }
 
+    fun preload() {
+        pages()
+    }
+
     private fun computePageSpans(): List<Spanned> {
         if (book.pageDisplay.width < 0 || book.pageDisplay.height < 0) {
             return listOf(SpannedString(""))

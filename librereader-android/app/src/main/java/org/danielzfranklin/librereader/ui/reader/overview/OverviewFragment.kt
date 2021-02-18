@@ -146,6 +146,6 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
 
     private fun exitTo(pos: BookPosition) {
         position.set(this, pos)
-        data.toggleOverview()
+        super.switchToPages()
     }
 }

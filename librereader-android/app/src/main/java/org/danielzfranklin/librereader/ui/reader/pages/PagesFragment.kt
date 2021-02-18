@@ -94,7 +94,7 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
     }
 
     override fun onShowOverview() {
-        data.toggleOverview()
+        super.switchToOverview()
     }
 
     override fun onBeginTurnBack() {

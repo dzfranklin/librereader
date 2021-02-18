@@ -7,18 +7,32 @@ import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.fragment.app.Fragment
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import nl.siegmann.epublib.domain.Book
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.model.BookStyle
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookDisplay
 import org.danielzfranklin.librereader.ui.reader.displayModel.BookPageDisplay
+import timber.log.Timber
 import kotlin.coroutines.coroutineContext
 
 abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
     Fragment(contentLayoutId) {
+
+    fun switchToPages() {
+        (requireActivity() as? ReaderActivity)?.switchToPages() ?:
+            Timber.w("Not switching to pages as not attached to ReaderActivity")
+    }
+
+    fun switchToOverview() {
+        (requireActivity() as? ReaderActivity)?.switchToOverview() ?:
+            Timber.w("Not switching to overview as not attached to ReaderActivity")
+    }
 
     abstract fun onViewCreatedAndDataReceived(
         view: View,
@@ -32,9 +46,6 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
     ) {
         val id = underlying.id
         val position = underlying.position
-        val inOverview = underlying.inOverview
-
-        fun toggleOverview() = underlying.toggleOverview()
 
         companion object {
             suspend fun from(data: DisplayIndependentData, context: Context, parent: ViewGroup): Data {
@@ -43,8 +54,9 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
                         withContext(Dispatchers.Default) {
                             val pageDisplay = BookPageDisplay.fitParent(parent, style)
                             val display = BookDisplay(context, data.id, data.epub, pageDisplay)
+                            display.sections[data.position.value.sectionIndex].preload()
                             display
-                        }   
+                        }
                     }
                     .stateIn(CoroutineScope(coroutineContext))
                 return Data(data, display)
@@ -89,18 +101,8 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
 
     data class DisplayIndependentData(
         val id: BookID,
-        val style: StateFlow<BookStyle>,
+        val style: Flow<BookStyle>,
         val position: PositionProcessor,
         val epub: Book,
-        private val _inOverview: MutableStateFlow<Boolean>
-    ) {
-        val inOverview = _inOverview.asStateFlow()
-
-        fun toggleOverview() {
-            var prev = _inOverview.value
-            while (!_inOverview.compareAndSet(prev, !prev)) {
-                prev = _inOverview.value
-            }
-        }
-    }
+    )
 }

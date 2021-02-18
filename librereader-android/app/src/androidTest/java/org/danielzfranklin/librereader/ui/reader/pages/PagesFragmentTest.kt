@@ -284,16 +284,7 @@ class PagesFragmentTest {
 
     @Test
     fun tapOverview() {
-        every { data.position } returns PositionProcessor(Job(), BookPosition.startOf(book))
-        every { data.toggleOverview() } just Runs
-        provideData()
-
-        onPagesView()
-            .perform(clickPercent(0.5f, 0.4f))
-
-        verify {
-            data.toggleOverview()
-        }
+        TODO()
     }
 
     private fun onPagesView() = onView(withId(org.danielzfranklin.librereader.R.id.pages))
