@@ -34,7 +34,7 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
             ?: Timber.w("Not switching to overview as not attached to ReaderActivity")
     }
 
-    abstract fun onViewCreatedAndDataReceived(
+    abstract fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?,
         data: Data
@@ -69,9 +69,9 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
     }
 
     private var data: Data? = null
-    private var platform: Platform? = null
+    private var viewCreatedParams: ViewCreatedParams? = null
 
-    private data class Platform(
+    private data class ViewCreatedParams(
         val view: View,
         val savedInstanceState: Bundle?
     )
@@ -81,18 +81,18 @@ abstract class ReaderFragment(@LayoutRes contentLayoutId: Int) :
         synchronized(this) {
             val cachedData = data
             if (cachedData != null) {
-                onViewCreatedAndDataReceived(view, savedInstanceState, cachedData)
+                onViewCreated(view, savedInstanceState, cachedData)
             } else {
-                platform = Platform(view, savedInstanceState)
+                viewCreatedParams = ViewCreatedParams(view, savedInstanceState)
             }
         }
     }
 
     fun onData(newData: Data) {
         synchronized(this) {
-            val cachedPlatform = platform
+            val cachedPlatform = viewCreatedParams
             if (cachedPlatform != null) {
-                onViewCreatedAndDataReceived(
+                onViewCreated(
                     cachedPlatform.view,
                     cachedPlatform.savedInstanceState,
                     newData

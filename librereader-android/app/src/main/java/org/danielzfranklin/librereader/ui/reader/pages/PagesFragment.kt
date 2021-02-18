@@ -37,7 +37,7 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
     private lateinit var visibleJob: Job
 
     @SuppressLint("ClickableViewAccessibility")
-    override fun onViewCreatedAndDataReceived(
+    override fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?,
         data: Data

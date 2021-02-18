@@ -36,7 +36,7 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
     private lateinit var layoutManager: LinearLayoutManager
     private lateinit var visibleJob: Job
 
-    override fun onViewCreatedAndDataReceived(
+    override fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?,
         data: Data
