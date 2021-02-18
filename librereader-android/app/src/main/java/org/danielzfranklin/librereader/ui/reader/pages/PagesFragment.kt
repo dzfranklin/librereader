@@ -60,6 +60,9 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
             )
 
             data.display.collectLatest { book ->
+                var initialPosition: BookPosition? = position.value
+                pages = createPages(book, initialPosition!!)
+
                 position.events.collect {
                     Timber.d(
                         "On ${it.position}. ${it.position.page(book).toInspectString()}"
@@ -77,14 +80,18 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
                         gestureDetector?.enableTurnForwards()
                     }
 
-                    if (it.changer != this@PagesFragment.hashCode()) {
-                        binding.pages.removeAllViews()
+                    if (it.changer != this@PagesFragment.hashCode() && it.position != initialPosition) {
                         pages = createPages(book, it.position)
+
+                        // if we re-visit this page later we need to re-display
+                        initialPosition = null
                     }
                 }
             }
         }
     }
+
+    // TODO: Use state machine?
 
     override fun onDestroyView() {
         super.onDestroyView()
