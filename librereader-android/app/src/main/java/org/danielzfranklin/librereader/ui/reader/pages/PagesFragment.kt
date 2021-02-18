@@ -56,6 +56,7 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
         gestureDetector?.resume()
 
         visibleJob = launch {
+            Timber.d("Laying out %s (%s)", data.id, this@PagesFragment)
 
             gestureDetector = PagesGestureDetector(
                 coroutineContext,
