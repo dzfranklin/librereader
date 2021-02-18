@@ -9,7 +9,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSnapHelper
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
@@ -32,6 +34,7 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
     private val book: StateFlow<BookDisplay> by lazy { data.display }
     private val position: PositionProcessor by lazy { data.position }
     private lateinit var layoutManager: LinearLayoutManager
+    private lateinit var viewJob: Job
 
     override fun onViewCreatedAndDataReceived(
         view: View,
@@ -105,7 +108,7 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
             }
         })
 
-        launch {
+        viewJob = launch {
             data.display.collectLatest { book ->
                 binding.seeker.max = book.pageCount() - 1
 
@@ -133,6 +136,11 @@ class OverviewFragment : ReaderFragment(R.layout.overview_fragment), CoroutineSc
                 }
             }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        viewJob.cancel(CancellationException("onDestroyView"))
     }
 
     private fun updateSeeker(position: BookPosition) {

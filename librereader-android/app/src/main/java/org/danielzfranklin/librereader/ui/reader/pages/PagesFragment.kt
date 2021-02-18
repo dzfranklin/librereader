@@ -8,7 +8,9 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.R
@@ -32,6 +34,7 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
     private val position: PositionProcessor by lazy { data.position }
     private val book: StateFlow<BookDisplay> by lazy { data.display }
     private lateinit var pages: Pages
+    private lateinit var viewJob: Job
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreatedAndDataReceived(
@@ -81,6 +84,11 @@ class PagesFragment : ReaderFragment(R.layout.pages_fragment), CoroutineScope,
                 }
             }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        viewJob.cancel(CancellationException("onDestroyView"))
     }
 
     override fun onPause() {
