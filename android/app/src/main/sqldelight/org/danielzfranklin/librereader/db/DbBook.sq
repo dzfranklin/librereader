@@ -1,0 +1,70 @@
+import java.lang.Float;
+import org.danielzfranklin.librereader.model.PresetColor;
+
+CREATE TABLE dbBook (
+    id TEXT PRIMARY KEY NOT NULL,
+    title TEXT NOT NULL,
+    coverBgColor INTEGER AS Int NOT NULL,
+    coverTextColor INTEGER AS Int NOT NULL
+);
+
+CREATE TABLE dbBookPosition(
+    id TEXT PRIMARY KEY NOT NULL REFERENCES dbBook,
+    percent REAL AS Float NOT NULL,
+    sectionIndex INTEGER AS Int NOT NULL,
+    charIndex INTEGER as Int NOT NULL
+);
+
+CREATE TABLE dbBookStyle(
+    id TEXT PRIMARY KEY NOT NULL REFERENCES dbBook,
+    color TEXT as PresetColor NOT NULL,
+    typeface TEXT NOT NULL,
+    textSizeSp REAL as Float NOT NULL,
+    paddingDp INTEGER as Int NOT NULL
+);
+
+listTitleOrder:
+    SELECT dbBook.id,
+        title,
+        coverBgColor,
+        coverTextColor,
+        percent,
+        sectionIndex,
+        charIndex,
+        color,
+        typeface,
+        textSizeSp,
+        paddingDp
+    FROM dbBook
+    INNER JOIN dbBookPosition ON dbBook.id == dbBookPosition.id
+    INNER JOIN dbBookStyle ON dbBook.id == dbBookStyle.id
+    ORDER BY title ASC;
+
+updatePosition:
+    UPDATE dbBookPosition
+    SET
+        percent = :percent,
+        sectionIndex = :sectionIndex,
+        charIndex = :charIndex
+    WHERE id == :id;
+
+create {
+    INSERT INTO dbBook (id, title, coverBgColor, coverTextColor)
+    VALUES (:id, :title, :coverBgColor, :coverTextColor);
+
+    INSERT INTO dbBookPosition(id, percent, sectionIndex, charIndex)
+    VALUES (:id, 0, 0, 0);
+
+    INSERT INTO dbBookStyle(id, color, typeface, textSizeSp, paddingDp)
+    VALUES (:id, :color, :typeface, :textSizeSp, :paddingDp);
+}
+
+getStyle:
+    SELECT *
+    FROM dbBookStyle
+    WHERE id == ?;
+
+getPosition:
+    SELECT *
+    FROM dbBookPosition
+    WHERE id == ?;

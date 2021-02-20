@@ -3,6 +3,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         jcenter()
+        maven {
+            url 'https://github.com/psiegman/mvn-repo/raw/master/releases'
+        }
     }
 }
 rootProject.name = "LibreReader"
