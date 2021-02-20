@@ -7,7 +7,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.palette.graphics.Palette
 import kotlinx.coroutines.*
 import nl.siegmann.epublib.epub.EpubReader
-import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.model.BookMeta
 import org.danielzfranklin.librereader.model.BookPosition
