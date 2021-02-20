@@ -1,9 +1,8 @@
-package org.danielzfranklin.librereader.ui
+package org.danielzfranklin.librereader
 
 import android.app.Application
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
-import org.danielzfranklin.librereader.BuildConfig
 import timber.log.Timber
 
 @Suppress("unused") // used in AndroidManifest.xml

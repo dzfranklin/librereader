@@ -1,4 +1,4 @@
-package org.danielzfranklin.librereader
+package org.danielzfranklin.librereader.ui
 
 import android.os.Bundle
 import androidx.activity.compose.setContent

@@ -1,6 +1,6 @@
 package org.danielzfranklin.librereader.repo
 
-import org.danielzfranklin.librereader.ui.LibreReaderApplication
+import org.danielzfranklin.librereader.LibreReaderApplication
 import android.graphics.Bitmap
 import android.net.Uri
 import kotlinx.coroutines.CoroutineScope
