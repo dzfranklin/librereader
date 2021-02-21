@@ -54,6 +54,10 @@ android {
             resources.srcDirs += ['src/androidTest/resources']
         }
     }
+
+    packagingOptions {
+        exclude "META-INF/*"
+    }
 }
 
 dependencies {
