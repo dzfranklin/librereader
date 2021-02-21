@@ -1,11 +1,10 @@
 package org.danielzfranklin.librereader.repo
 
-import org.danielzfranklin.librereader.LibreReaderApplication
+import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import nl.siegmann.epublib.domain.Book
@@ -15,12 +14,14 @@ import org.danielzfranklin.librereader.model.BookMeta
 import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.model.BookStyle
 import java.util.zip.ZipInputStream
+import kotlin.coroutines.CoroutineContext
 
-class Repo(private val app: LibreReaderApplication) : CoroutineScope {
-    override val coroutineContext = Job()
-
-    private val bookDao = BookDao.create(app)
-
+class Repo(
+    override val coroutineContext: CoroutineContext,
+    private val bookDao: BookDao,
+    private val epubImportFactory: EpubImport.Factory,
+    private val bookFilesFactory: BookFiles.Factory
+) : CoroutineScope {
     fun listBooks(): Flow<List<BookMeta>> = bookDao.list()
 
     suspend fun updatePosition(position: BookPosition) {
@@ -28,13 +29,13 @@ class Repo(private val app: LibreReaderApplication) : CoroutineScope {
     }
 
     suspend fun importBook(uri: Uri): BookID {
-        val meta = EpubImport(coroutineContext, app, uri).import()
+        val meta = epubImportFactory.get(uri).import()
         bookDao.insert(meta)
         return meta.id
     }
 
     suspend fun getCover(id: BookID): Bitmap? = withContext(Dispatchers.IO) {
-        BookFiles.open(app, id)?.coverBitmap()
+        bookFilesFactory.open(id)?.coverBitmap()
     }
 
     fun getBookStyleFlow(id: BookID): Flow<BookStyle?> = bookDao.getBookStyleFlow(id)
@@ -42,7 +43,7 @@ class Repo(private val app: LibreReaderApplication) : CoroutineScope {
     suspend fun getPosition(id: BookID): BookPosition? = bookDao.getPosition(id)
 
     suspend fun getEpub(id: BookID): Book? = withContext(Dispatchers.IO) {
-        val files = BookFiles.open(app, id) ?: return@withContext null
+        val files = bookFilesFactory.open(id) ?: return@withContext null
 
         files.epubFile.inputStream().use { inputStream ->
             ZipInputStream(inputStream).use { zipStream ->
@@ -54,14 +55,16 @@ class Repo(private val app: LibreReaderApplication) : CoroutineScope {
     }
 
     companion object {
-        private var instance: Repo? = null
-
-        fun initialize(application: LibreReaderApplication) {
-            instance = Repo(application)
-        }
-
-        fun get(): Repo {
-            return instance ?: throw IllegalStateException("Repo not initialized")
+        fun create(coroutineScope: CoroutineScope, context: Context): Repo {
+            val bookDao = BookDao.create(context)
+            val epubImportFactory = EpubImport.Factory(context, coroutineScope.coroutineContext)
+            val bookFilesFactory = BookFiles.Factory(context)
+            return Repo(
+                coroutineScope.coroutineContext,
+                bookDao,
+                epubImportFactory,
+                bookFilesFactory
+            )
         }
     }
 }

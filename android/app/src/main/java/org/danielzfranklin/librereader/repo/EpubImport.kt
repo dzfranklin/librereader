@@ -31,6 +31,10 @@ class EpubImport(
     override val coroutineContext =
         CoroutineScope(coroutineContext + Dispatchers.IO).coroutineContext
 
+    class Factory(private val context: Context, private val coroutineContext: CoroutineContext) {
+        fun get(uri: Uri) = EpubImport(coroutineContext, context, uri)
+    }
+
     private val tempUuid = UUID.randomUUID().toString()
 
     private val inProgressDir = context.getDir(IN_PROGRESS_DIR, Context.MODE_PRIVATE)
@@ -88,7 +92,7 @@ class EpubImport(
         val position = BookPosition(id, 0f, 0, 0)
         val style = BookStyle()
 
-        val bookFiles = BookFiles.create(context, id)
+        val bookFiles = BookFiles.Factory(context).create(id)
         awaitAll(
             async {
                 parsed.coverStream.writeTo(bookFiles.coverFile)

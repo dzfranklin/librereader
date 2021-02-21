@@ -1,5 +1,10 @@
 <resources>
     <string name="app_name">LibreReader</string>
+    <string name="cover">Cover</string>
+    <string name="not_found">Not found</string>
+    <string name="library">Library</string>
+    <string name="import_book">Import book</string>
+    <string name="read_book">Read book</string>
     <string name="crimson_pro_font">Crimson Pro</string>
     <string name="preview_book_text">
         <b>On the 24th of February, 1815</b>, the lookout at Notre-Dame de la Garde signalled the
