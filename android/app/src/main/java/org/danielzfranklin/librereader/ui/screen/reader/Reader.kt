@@ -172,7 +172,6 @@ fun Page(
     bitmap: ImageBitmap,
     bitmapClip: Rect,
     innerOffset: Offset,
-    modifier: Modifier = Modifier
 ) {
     // TODO: Look at CoreText TextController for how to handle selection
     Surface(modifier.fillMaxSize(), elevation = 15.dp) {
