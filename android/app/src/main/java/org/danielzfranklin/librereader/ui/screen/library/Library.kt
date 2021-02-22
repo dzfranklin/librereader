@@ -92,7 +92,7 @@ fun BookShelf(
 
     LazyVerticalGrid(
         GridCells.Adaptive(bookWidth),
-        modifier.padding(horizontal = 10.dp, vertical = 10.dp)
+        modifier.padding(start = 10.dp, end = 10.dp, top = 10.dp)
     ) {
         for (book in books) {
             item {
