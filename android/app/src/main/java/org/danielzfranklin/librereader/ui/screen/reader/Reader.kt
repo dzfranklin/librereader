@@ -1,5 +1,6 @@
 package org.danielzfranklin.librereader.ui.screen.reader
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.CircularProgressIndicator
@@ -36,6 +37,7 @@ import org.danielzfranklin.librereader.util.round
 import org.danielzfranklin.librereader.util.size
 import timber.log.Timber
 import kotlin.math.ceil
+import kotlin.math.roundToInt
 
 @Composable
 fun ReaderScreen(bookId: BookID) {
@@ -75,6 +77,7 @@ fun PagesPreview() {
                             restLine = 10.sp
                         )
                     )
+                )
                 pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
             } else {
                 pushStyle(ParagraphStyle())
@@ -106,7 +109,7 @@ fun Pages(epub: Epub) {
         val rendered = renderSection(section, minWidth - padding * 2f, minHeight - padding * 2f)
 
         Page(rendered.bitmap, rendered.pages[1], innerOffset)
-        Page(rendered.bitmap, rendered.pages[0], innerOffset, Modifier.offset((-300).dp, 0.dp))
+        Page(rendered.bitmap, rendered.pages[0], innerOffset, percentTurned = 0.7f)
     }
 }
 
@@ -175,10 +178,25 @@ fun Page(
     bitmap: ImageBitmap,
     bitmapClip: Rect,
     innerOffset: Offset,
+    percentTurned: Float = 1f,
 ) {
     // TODO: Look at CoreText TextController for how to handle selection
-    Surface(modifier.fillMaxSize(), elevation = 15.dp) {
-        BoxWithConstraints(Modifier.fillMaxSize()) {
+
+    val animatedPercentTurned = animateFloatAsState(percentTurned)
+
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        Surface(
+            Modifier
+                .fillMaxSize()
+                .offset {
+                    // NOTE: Computing the offset in here means we only re-layout, not re-compose
+                    IntOffset(
+                        (-maxWidth.toPx() * (1f - animatedPercentTurned.value)).roundToInt(),
+                        0
+                    )
+                },
+            elevation = 15.dp
+        ) {
             Canvas(Modifier.fillMaxSize()) {
                 drawRect(Color.White)
 
