@@ -13,6 +13,8 @@ class Epub(val maxSection: Int, private val getSection: (Int) -> EpubSection?) {
     private val sections = mutableMapOf<Int, EpubSection>()
 
     fun section(index: Int): EpubSection? {
+        if (index > maxSection || index < 0) return null
+
         val cached = sections[index]
         if (cached != null) return cached
 
