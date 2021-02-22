@@ -120,8 +120,9 @@ fun Book(book: LibraryModel.Book, modifier: Modifier = Modifier, onClick: () -> 
             Image(
                 book.cover,
                 stringResource(R.string.cover),
-                contentScale = ContentScale.Crop,
-                alignment = Alignment.Center,
+                Modifier.fillMaxSize(1f),
+                contentScale = ContentScale.FillHeight,
+                alignment = Alignment.TopCenter,
             )
 
             Column(Modifier.align(Alignment.BottomCenter)) {
