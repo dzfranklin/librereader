@@ -19,13 +19,17 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageBitmapConfig
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontLoader
-import androidx.compose.ui.text.MultiParagraph
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.*
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextIndent
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.danielzfranklin.librereader.epub.Epub
 import org.danielzfranklin.librereader.epub.EpubSection
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.ui.LocalRepo
@@ -34,6 +38,7 @@ import org.danielzfranklin.librereader.util.round
 import org.danielzfranklin.librereader.util.size
 import timber.log.Timber
 import kotlin.math.ceil
+import org.danielzfranklin.librereader.R
 
 @Composable
 fun ReaderScreen(bookId: BookID) {
@@ -55,13 +60,37 @@ fun ReaderScreen(bookId: BookID) {
                 CircularProgressIndicator(Modifier.fillMaxWidth(0.5f).aspectRatio(1f))
             }
     } else {
-        Pages(current)
+        Pages(current.epub)
     }
 }
 
+@Preview(widthDp = 411, heightDp = 731)
 @Composable
-fun Pages(book: ReaderModel.Book) {
-    val section = book.epub.section(2)!!
+fun PagesPreview() {
+    val string = stringResource(R.string.preview_section_text)
+    val text = with(AnnotatedString.Builder()) {
+        for ((i, para) in string.split("{{para_sep}}").withIndex()) {
+            if (i == 0) {
+                pushStyle(ParagraphStyle(textIndent = TextIndent(firstLine = 15.sp, restLine = 10.sp)))
+                pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
+            } else {
+                pushStyle(ParagraphStyle())
+                pushStyle(SpanStyle())
+            }
+
+            append(para)
+            pop()
+            pop()
+        }
+        toAnnotatedString()
+    }
+    val epub = Epub(0) { if (it == 0) EpubSection(text) else null }
+    Pages(epub)
+}
+
+@Composable
+fun Pages(epub: Epub) {
+    val section = epub.section(0)!!
     val padding = 15.dp
 
     val density = LocalDensity.current
@@ -74,7 +103,7 @@ fun Pages(book: ReaderModel.Book) {
         val rendered = renderSection(section, minWidth - padding * 2f, minHeight - padding * 2f)
 
         Page(rendered.bitmap, rendered.pages[1], innerOffset)
-        Page(rendered.bitmap, rendered.pages[0], innerOffset, Modifier.offset((-200).dp, 0.dp))
+        Page(rendered.bitmap, rendered.pages[0], innerOffset, Modifier.offset((-300).dp, 0.dp))
     }
 }
 

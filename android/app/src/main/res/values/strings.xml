@@ -6,11 +6,66 @@
     <string name="import_book">Import book</string>
     <string name="read_book">Read book</string>
     <string name="crimson_pro_font">Crimson Pro</string>
-    <string name="preview_book_text">
-        <b>On the 24th of February, 1815</b>, the lookout at Notre-Dame de la Garde signalled the
-        three master, the <i>Pharaon</i> from Smyrna, Trieste, and Naples.\n\n
-
-        As usual, a pilot put off immediately, and rounding the Château d’If, got on board the
-        vessel between Cape Morgiou and Rion island.
+    <string name="preview_section_text">
+        “I am writing to you specially to say how glad I have been to be your contemporary, and
+        to express my last and sincere request. My friend, return to literary activity! That gift
+        came to you from whence comes all the rest … Great writer of our Russian land, listen to my
+        wish!”
+		{{para_sep}}
+        So wrote Turgenev on his deathbed to Tolstoy, when the latter, absorbed in religious
+        struggles and studies, had for five years produced no work of art save one short story.
+		{{para_sep}}
+        Nor was it long before the wish was realised, for three years later Tolstoy was writing The
+        Death of Iván Ilyitch, and that tremendous drama, The Power of Darkness; and these were
+        followed by a number of short stories, some plays, a long novel (Resurrection) and the works
+        now posthumously published. Among these latter a foremost place belongs to Hadji Murád, in
+        which Tolstoy again tells of that Caucasian life which supplied him with the matter for
+        some of his earliest tales as well as for his great story The Cossacks, which Turgenev
+        declared to be “the best story that has been written in our (Russian) language.”
+		{{para_sep}}
+        The Caucasus indeed offered a rich variety of material on which Tolstoy drew at every stage
+        of his literary career. It was there that, at the age of twenty-three, he first saw war as a
+        volunteer; there he served for two years as a cadet; and there finally he became an officer,
+        before leaving to serve in the Crimean war—which in its turn gave him material for
+        his sketches of Sevastopol.
+		{{para_sep}}
+        In his letters from the Caucasus he often complained of the dullness and emptiness of his
+        life there; yet it certainly attracted him for a while, and was not devoid of stirring and
+        curious incidents.
+		{{para_sep}}
+        The most extraordinary of these relates to a gambling debt he incurred and was unable to
+        pay. Having given notes-of-hand, he was in despair when the date of payment approached
+        without his having been able to procure the money needed, and he prayed earnestly to God
+        “to get me out of this disagreeable scrape.”
+		{{para_sep}}
+        The very next morning he received a letter enclosing his notes-of-hand, which were returned
+        to him as a free gift by a young Chechen named Sado, who had become his kunák
+        (devoted friend) and had won them back at cards from the officer who won them from Tolstoy.
+		{{para_sep}}
+        It was in company with that same Sado that Tolstoy, when passing from one fort to another,
+        was chased by the enemy and nearly captured.
+		{{para_sep}}
+        His life was in imminent danger on another occasion, when a shell, fired by the enemy,
+        smashed the carriage of a cannon he was pointing; but once again he escaped unhurt.
+		{{para_sep}}
+        It was during his first year in the Caucasus that Tolstoy began writing for publication.
+        “The Raid,” describing the kind of warfare he was witnessing there, was the second of his
+        stories to appear in print. A little later he wrote two other tales dealing with the same
+        subject: “The Wood-Felling,” and “Meeting a Moscow Acquaintance in the Detachment.”
+		{{para_sep}}
+        Feeling that he had not exhausted the material at his disposal, he then planned
+        “The Cossacks: a Caucasian Story of 1852,” which he kept on hand unfinished for nearly ten
+        years, and might not have published even then had he not happened to lose some money at
+        Chinese billiards to a stranger he met at the club in Moscow. To pay this debt, he
+        sold “The Cossacks” for Rs. 1,000 (about £150 in those days) to Katkóv, the well-known
+        publicist and publisher, with whom he subsequently quarrelled. The circumstances under
+        which he had parted with “The Cossacks” were so unpleasant to Tolstoy that he never
+        completed the story.
+		{{para_sep}}
+        Ten years later, when he had set his heart on producing an attractive reading-book for
+        children, he wrote the charming little story “A Prisoner in the Caucasus” (one of the gems
+        in Twenty-three Tales), founded on the above-mentioned incident of his own narrow escape
+        from capture; and finally, after another thirty years had passed, he drew upon his Caucasian
+        recollections for the last time when he composed Hadji Murád.
     </string>
 </resources>
