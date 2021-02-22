@@ -31,20 +31,13 @@ val LocalRepo = staticCompositionLocalOf<Repo> { throw IllegalStateException("Re
 
 @Composable
 fun App() {
-    val navController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
     val repo = Repo.create(coroutineScope, LocalContext.current)
 
     LibreReaderTheme {
         Scaffold {
             Providers(LocalRepo provides repo) {
-                NavHost(navController, startDestination = Screen.Library.route) {
-                    composable(Screen.Library.route) { LibraryScreen(navController) }
-                    composable(Screen.Reader.route) {
-                        val bookId = BookID(it.arguments!!.getString("bookId")!!)
-                        Text(bookId.toString())
-                    }
-                }
+                Nav()
             }
         }
     }
