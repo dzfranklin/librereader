@@ -9,15 +9,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -143,7 +141,7 @@ fun Book(book: LibraryModel.Book, modifier: Modifier = Modifier, onClick: () -> 
                     Text(
                         book.title,
                         Modifier
-                            .padding(start = 10.dp, end = 10.dp, top = 5.dp, bottom = 10.dp)
+                            .padding(start = 10.dp, end = 10.dp, top = 5.dp, bottom = 8.dp)
                             .fillMaxWidth(1f),
                         style = TextStyle(fontWeight = FontWeight.Medium, fontSize = 13.sp),
                         maxLines = 2,
@@ -151,6 +149,13 @@ fun Book(book: LibraryModel.Book, modifier: Modifier = Modifier, onClick: () -> 
                         textAlign = TextAlign.Center
                     )
                 }
+
+                LinearProgressIndicator(
+                    progress = book.progress,
+                    Modifier.fillMaxWidth(1f).alpha(0.9f),
+                    color = book.textColor,
+                    backgroundColor = book.bgColor
+                )
             }
         }
     }
