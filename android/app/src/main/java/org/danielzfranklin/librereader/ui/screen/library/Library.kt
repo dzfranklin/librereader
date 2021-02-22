@@ -103,11 +103,9 @@ fun BookShelf(
             GridCells.Fixed(cols),
             modifier
                 .width((bookWidth + bookHorizontalPadding * 2) * cols.toFloat())
-                .padding(
-                    start = surroundingHorizontalPadding,
-                    end = surroundingHorizontalPadding,
-                    top = 10.dp
-                ).align(Alignment.TopCenter)
+                .padding(horizontal = surroundingHorizontalPadding)
+                .padding(top = 10.dp)
+                .align(Alignment.TopCenter)
         ) {
             for (book in books) {
                 item {
@@ -159,7 +157,8 @@ fun Book(book: LibraryModel.Book, modifier: Modifier = Modifier, onClick: () -> 
                     Text(
                         book.title,
                         Modifier
-                            .padding(start = 10.dp, end = 10.dp, top = 5.dp, bottom = 8.dp)
+                            .padding(horizontal = 10.dp)
+                            .padding(top = 5.dp, bottom = 8.dp)
                             .fillMaxWidth(1f),
                         style = TextStyle(fontWeight = FontWeight.Medium, fontSize = 13.sp),
                         maxLines = 2,
