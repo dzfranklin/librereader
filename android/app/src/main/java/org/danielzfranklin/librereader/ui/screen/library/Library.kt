@@ -88,18 +88,36 @@ fun BookShelf(
     val bookWidth = 120.dp
     val bookHeight = bookWidth * 1.8f
 
-    LazyVerticalGrid(
-        GridCells.Adaptive(bookWidth),
-        modifier.padding(start = 10.dp, end = 10.dp, top = 10.dp)
-    ) {
-        for (book in books) {
-            item {
-                Book(
-                    book,
-                    Modifier
-                        .size(bookWidth, bookHeight)
-                        .padding(vertical = 10.dp, horizontal = 2.dp)
-                ) { onNavigateToBook(book.id) }
+    // NOTE: We manually compute the number of columns instead of using GridCells.Adaptive so that
+    // we can limit the padding between cells to a fixed value and put the extra padding on the
+    // outside
+
+    val bookHorizontalPadding = 4.dp
+    val surroundingHorizontalPadding = 10.dp
+
+    BoxWithConstraints(Modifier.fillMaxSize(1f)) {
+        val cols =
+            ((maxWidth - surroundingHorizontalPadding * 2f) / (bookWidth + bookHorizontalPadding * 2f)).toInt()
+
+        LazyVerticalGrid(
+            GridCells.Fixed(cols),
+            modifier
+                .width((bookWidth + bookHorizontalPadding * 2) * cols.toFloat())
+                .padding(
+                    start = surroundingHorizontalPadding,
+                    end = surroundingHorizontalPadding,
+                    top = 10.dp
+                ).align(Alignment.TopCenter)
+        ) {
+            for (book in books) {
+                item {
+                    Book(
+                        book,
+                        Modifier
+                            .size(bookWidth, bookHeight)
+                            .padding(vertical = 10.dp, horizontal = bookHorizontalPadding)
+                    ) { onNavigateToBook(book.id) }
+                }
             }
         }
     }
