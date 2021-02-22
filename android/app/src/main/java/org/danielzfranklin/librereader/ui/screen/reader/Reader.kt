@@ -56,7 +56,7 @@ fun ReaderScreen(bookId: BookID) {
 
     val current = book.value
     if (current == null) {
-        Box(Modifier.fillMaxSize(1f), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(Modifier.fillMaxWidth(0.5f).aspectRatio(1f))
             }
     } else {
@@ -95,7 +95,7 @@ fun Pages(epub: Epub) {
 
     val density = LocalDensity.current
 
-    BoxWithConstraints(Modifier.fillMaxSize(1f)) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
         val innerOffset = with(density) {
             Offset(padding.toPx(), padding.toPx())
         }
@@ -175,9 +175,9 @@ fun Page(
     modifier: Modifier = Modifier
 ) {
     // TODO: Look at CoreText TextController for how to handle selection
-    Surface(modifier.fillMaxSize(1f), elevation = 15.dp) {
-        BoxWithConstraints(Modifier.fillMaxSize(1f)) {
-            Canvas(Modifier.fillMaxSize(1f)) {
+    Surface(modifier.fillMaxSize(), elevation = 15.dp) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            Canvas(Modifier.fillMaxSize()) {
                 drawRect(Color.White)
 
                 drawImage(
