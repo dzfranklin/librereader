@@ -48,9 +48,9 @@ fun ReaderScreen(bookId: BookID) {
 
     val current = book.value
     if (current == null) {
-        Box(Modifier.fillMaxSize(1f), contentAlignment = Alignment.TopCenter) {
-            CircularProgressIndicator(Modifier.fillMaxWidth(0.5f))
-        }
+        Box(Modifier.fillMaxSize(1f), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(Modifier.fillMaxWidth(0.5f).aspectRatio(1f))
+            }
     } else {
         Pages(current)
     }
