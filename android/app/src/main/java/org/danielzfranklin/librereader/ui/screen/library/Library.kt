@@ -24,8 +24,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.navigate
@@ -112,7 +110,7 @@ fun Book(book: LibraryModel.Book, modifier: Modifier = Modifier, onClick: () -> 
         shape = RoundedCornerShape(8.dp),
         modifier = modifier.clickable(onClickLabel = stringResource(R.string.read_book)) { onClick() }
     ) {
-        ConstraintLayout {
+        Box {
             Image(
                 book.cover,
                 stringResource(R.string.cover),
@@ -120,45 +118,32 @@ fun Book(book: LibraryModel.Book, modifier: Modifier = Modifier, onClick: () -> 
                 alignment = Alignment.Center,
             )
 
-            val (aboveScrim, footer) = createRefs()
-
-            Box(
-                Modifier
-                    .fillMaxHeight(0.4f)
-                    .constrainAs(aboveScrim) {
-                        width = Dimension.fillToConstraints
-                        start.linkTo(parent.start)
-                        end.linkTo(parent.end)
-                        bottom.linkTo(footer.top)
-                    }.background(
-                        Brush.verticalGradient(
-                            0f to Color.Transparent,
-                            1f to book.bgColor
-                        ),
-                        alpha = 0.9f
-                    )
-            )
-
-            Box(
-                Modifier
-                    .constrainAs(footer) {
-                        width = Dimension.fillToConstraints
-                        height = Dimension.wrapContent
-                        start.linkTo(parent.start)
-                        end.linkTo(parent.end)
-                        bottom.linkTo(parent.bottom)
-                    }
-                    .background(SolidColor(book.bgColor), alpha = 0.9f)) {
-                Text(
-                    book.title,
+            Column(Modifier.align(Alignment.BottomCenter)) {
+                Box(
                     Modifier
-                        .padding(start = 10.dp, end = 10.dp, top = 5.dp, bottom = 10.dp)
-                        .fillMaxWidth(1f),
-                    style = MaterialTheme.typography.subtitle2,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                        .fillMaxWidth(1f)
+                        .fillMaxHeight(0.4f)
+                        .background(
+                            Brush.verticalGradient(
+                                0f to Color.Transparent,
+                                1f to book.bgColor
+                            ),
+                            alpha = 0.9f
+                        )
                 )
+
+                Box(Modifier.background(SolidColor(book.bgColor), alpha = 0.9f)) {
+                    Text(
+                        book.title,
+                        Modifier
+                            .padding(start = 10.dp, end = 10.dp, top = 5.dp, bottom = 10.dp)
+                            .fillMaxWidth(1f),
+                        style = MaterialTheme.typography.subtitle2,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }
