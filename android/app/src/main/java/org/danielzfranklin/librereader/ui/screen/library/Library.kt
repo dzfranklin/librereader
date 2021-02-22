@@ -39,7 +39,7 @@ import org.danielzfranklin.librereader.ui.Screen
 import org.danielzfranklin.librereader.util.registerForActivityResult
 
 @Composable
-fun Library(navController: NavHostController) {
+fun LibraryScreen(navController: NavHostController) {
     val model = viewModel(
         LibraryModel::class.java,
         factory = LibraryModel.Factory(LocalRepo.current)

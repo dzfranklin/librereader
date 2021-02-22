@@ -59,7 +59,7 @@ class LibraryTest {
         rule.setContent {
             LibreReaderTheme {
                 Providers(LocalRepo provides repo) {
-                    Library(navController)
+                    LibraryScreen(navController)
                 }
             }
         }

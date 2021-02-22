@@ -15,7 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.repo.Repo
-import org.danielzfranklin.librereader.ui.screen.library.Library
+import org.danielzfranklin.librereader.ui.screen.library.LibraryScreen
 import org.danielzfranklin.librereader.ui.theme.LibreReaderTheme
 
 class MainActivity : AppCompatActivity() {
@@ -39,7 +39,7 @@ fun App() {
         Scaffold {
             Providers(LocalRepo provides repo) {
                 NavHost(navController, startDestination = Screen.Library.route) {
-                    composable(Screen.Library.route) { Library(navController) }
+                    composable(Screen.Library.route) { LibraryScreen(navController) }
                     composable(Screen.Reader.route) {
                         val bookId = BookID(it.arguments!!.getString("bookId")!!)
                         Text(bookId.toString())
