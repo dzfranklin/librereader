@@ -84,7 +84,7 @@ fun PagesPreview() {
         }
         toAnnotatedString()
     }
-    val epub = Epub(0) { if (it == 0) EpubSection(text) else null }
+    val epub = Epub(0, getSection = { if (it == 0) EpubSection(text) else null })
     Pages(epub)
 }
 
