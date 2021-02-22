@@ -24,11 +24,9 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.round
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.epub.Epub
 import org.danielzfranklin.librereader.epub.EpubSection
 import org.danielzfranklin.librereader.model.BookID
@@ -38,7 +36,6 @@ import org.danielzfranklin.librereader.util.round
 import org.danielzfranklin.librereader.util.size
 import timber.log.Timber
 import kotlin.math.ceil
-import org.danielzfranklin.librereader.R
 
 @Composable
 fun ReaderScreen(bookId: BookID) {
@@ -57,8 +54,8 @@ fun ReaderScreen(bookId: BookID) {
     val current = book.value
     if (current == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(Modifier.fillMaxWidth(0.5f).aspectRatio(1f))
-            }
+            CircularProgressIndicator(Modifier.fillMaxWidth(0.5f).aspectRatio(1f))
+        }
     } else {
         Pages(current.epub)
     }
@@ -71,7 +68,13 @@ fun PagesPreview() {
     val text = with(AnnotatedString.Builder()) {
         for ((i, para) in string.split("{{para_sep}}").withIndex()) {
             if (i == 0) {
-                pushStyle(ParagraphStyle(textIndent = TextIndent(firstLine = 15.sp, restLine = 10.sp)))
+                pushStyle(
+                    ParagraphStyle(
+                        textIndent = TextIndent(
+                            firstLine = 15.sp,
+                            restLine = 10.sp
+                        )
+                    )
                 pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
             } else {
                 pushStyle(ParagraphStyle())
