@@ -42,6 +42,8 @@ class Repo(
 
     suspend fun getPosition(id: BookID): BookPosition? = bookDao.getPosition(id)
 
+    fun getPositionFlow(id: BookID): Flow<BookPosition?> = bookDao.getPositionFlow(id)
+
     suspend fun getEpub(id: BookID): Book? = withContext(Dispatchers.IO) {
         val files = bookFilesFactory.open(id) ?: return@withContext null
 

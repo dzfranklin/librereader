@@ -64,6 +64,16 @@ class BookDao(database: Database) {
         }
     }
 
+    fun getPositionFlow(id: BookID): Flow<BookPosition?> =
+        queries.getPosition(id.toString())
+            .asFlow()
+            .mapToOneOrNull()
+            .map {
+                it?.let {
+                    BookPosition(id, it.percent, it.sectionIndex, it.charIndex)
+                }
+            }
+
     private fun metaMapper(
         idString: String, title: String, coverBgColor: Int, coverTextColor: Int, percent: Float,
         sectionIndex: Int, charIndex: Int, color: PresetColor, typefaceName: String,
