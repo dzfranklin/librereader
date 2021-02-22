@@ -47,7 +47,7 @@ class ReaderModel(
     )
 
     val book: Deferred<Book> = async {
-        val epub = async { Epub(this@ReaderModel.coroutineContext, repo.getEpub(bookId)!!) }
+        val epub = async { Epub(repo.getEpub(bookId)!!) }
         val style = async { repo.getBookStyleFlow(bookId).map { it!! }.stateIn(this@ReaderModel) }
         val position = async { repo.getPositionFlow(bookId).map { it!! }.stateIn(this@ReaderModel) }
         val book = Book(bookId, epub.await(), style.await(), position.await())
