@@ -1,13 +1,13 @@
 package org.danielzfranklin.librereader.epub
 
-import kotlinx.coroutines.CoroutineScope
 import nl.siegmann.epublib.domain.Book
-import kotlin.coroutines.CoroutineContext
+import org.danielzfranklin.librereader.model.BookID
 
-class Epub(val maxSection: Int, private val getSection: (Int) -> EpubSection?) {
-    constructor(epub: Book) : this(
+class Epub(val id: BookID, val maxSection: Int, private val getSection: (Int) -> EpubSection?) {
+    constructor(id: BookID, epub: Book) : this(
+        id,
         epub.spine.spineReferences.size - 1,
-        { if (it < epub.spine.spineReferences.size) EpubSection(epub, it) else null }
+        { if (it < epub.spine.spineReferences.size) EpubSection(id, epub, it) else null }
     )
 
     private val sections = mutableMapOf<Int, EpubSection>()

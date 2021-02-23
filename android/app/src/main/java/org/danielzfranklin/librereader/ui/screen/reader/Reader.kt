@@ -1,42 +1,48 @@
 package org.danielzfranklin.librereader.ui.screen.reader
 
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.asDisposableClock
+import androidx.compose.animation.core.AnimationClockObservable
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.animation.FlingConfig
+import androidx.compose.foundation.animation.defaultFlingConfig
+import androidx.compose.foundation.gestures.ScrollableController
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Surface
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.*
 import androidx.compose.runtime.State
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.gesture.scrollorientationlocking.Orientation
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.ImageBitmapConfig
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.platform.LocalAnimationClock
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontLoader
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.*
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.epub.Epub
 import org.danielzfranklin.librereader.epub.EpubSection
 import org.danielzfranklin.librereader.model.BookID
+import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.ui.LocalRepo
-import org.danielzfranklin.librereader.util.offset
-import org.danielzfranklin.librereader.util.round
-import org.danielzfranklin.librereader.util.size
+import org.danielzfranklin.librereader.util.clamp
 import timber.log.Timber
-import kotlin.math.ceil
+import kotlin.coroutines.CoroutineContext
 import kotlin.math.roundToInt
 
 @Composable
@@ -49,7 +55,6 @@ fun ReaderScreen(bookId: BookID) {
     )
 
     val book: State<ReaderModel.Book?> = produceState(null) {
-        Timber.i("In produceState")
         value = model.book.await()
     }
 
@@ -66,147 +71,181 @@ fun ReaderScreen(bookId: BookID) {
 @Preview(widthDp = 411, heightDp = 731)
 @Composable
 fun PagesPreview() {
-    val string = stringResource(R.string.preview_section_text)
-    val text = with(AnnotatedString.Builder()) {
-        for ((i, para) in string.split("{{para_sep}}").withIndex()) {
-            if (i == 0) {
-                pushStyle(
-                    ParagraphStyle(
-                        textIndent = TextIndent(
-                            firstLine = 15.sp,
-                            restLine = 10.sp
-                        )
-                    )
-                )
-                pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
-            } else {
-                pushStyle(ParagraphStyle())
-                pushStyle(SpanStyle())
-            }
+    val epub = remember { mutableStateOf<Epub?>(null) }
 
-            append(para)
-            pop()
-            pop()
+    val string = stringResource(R.string.preview_section_text)
+    LaunchedEffect(true) {
+        val text = with(AnnotatedString.Builder()) {
+            for ((i, para) in string.split("{{para_sep}}").withIndex()) {
+                pushStyle(ParagraphStyle(textIndent = TextIndent(firstLine = 20.sp)))
+
+                if (i == 0) {
+                    pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
+                } else {
+                    pushStyle(SpanStyle())
+                }
+
+                append(para)
+                pop()
+                pop()
+            }
+            toAnnotatedString()
         }
-        toAnnotatedString()
+        val id = BookID("sample:1")
+        epub.value = Epub(id, 2, getSection = { if (it == 2) EpubSection(id, 2, text) else null })
     }
-    val epub = Epub(0, getSection = { if (it == 0) EpubSection(text) else null })
-    Pages(epub)
+
+    val cached = epub.value
+    if (cached != null) {
+        Pages(cached)
+    }
+}
+
+class PagesState(
+    override val coroutineContext: CoroutineContext,
+    val epub: Epub,
+    private val baseStyle: TextStyle,
+    private val outerWidth: Dp,
+    private val outerHeight: Dp,
+    private val padding: Dp,
+    private val onPosition: (BookPosition) -> Unit,
+    private val flingConfig: FlingConfig,
+    private val clock: AnimationClockObservable,
+    private val density: Density,
+    private val fontLoader: Font.ResourceLoader,
+) : CoroutineScope {
+    private val innerWidth = outerWidth - padding * 2f
+    private val innerHeight = outerHeight - padding * 2f
+
+    val currentPage = mutableStateOf<MeasuredPage?>(null)
+    val nextPage = mutableStateOf<MeasuredPage?>(null)
+    val percentTurned = mutableStateOf(1f)
+
+    private val outerWidthPx = with(density) { outerWidth.toPx() }
+    val scrollController = ScrollableController(consumeScrollDelta = {
+        val deltaPercent = it / outerWidthPx
+
+        percentTurned.value += deltaPercent
+
+        // TODO: don't consume all if at start/end
+        it
+    }, flingConfig, clock)
+
+    // TODO: have multiple rendering section states?
+    val sectionIndex = 2
+    var TODOPercentTODO = 0f
+    val section =
+        SectionRenderer(
+            innerWidth, innerHeight, padding, epub.section(sectionIndex)!!,
+            { BookPosition(epub.id, TODOPercentTODO, 2, it) }, baseStyle, density, fontLoader
+        )
+
+    fun setPosition(newPosition: BookPosition) {
+        TODO()
+    }
+
+    init {
+        // TODO: Temp
+        launch {
+            currentPage.value = section.computePage(1)!!
+        }
+        launch {
+            nextPage.value = section.computePage(2)!!
+        }
+    }
+}
+
+@Composable
+fun rememberPagesState(
+    epub: Epub,
+    baseStyle: TextStyle,
+    width: Dp,
+    height: Dp,
+    padding: Dp,
+    onPosition: (BookPosition) -> Unit
+): PagesState {
+    Timber.i("Computing pages state")
+    val clock = LocalAnimationClock.current.asDisposableClock()
+    val flingConfig = defaultFlingConfig()
+    val density = LocalDensity.current
+    val fontLoader = LocalFontLoader.current
+    val coroutineContext = rememberCoroutineScope().coroutineContext
+    // TODO: Do we need to add a remember call here, or will the composable change tracking solve this anyway?
+    return PagesState(
+        coroutineContext,
+        epub,
+        baseStyle,
+        width,
+        height,
+        padding,
+        onPosition,
+        flingConfig,
+        clock,
+        density,
+        fontLoader
+    )
 }
 
 @Composable
 fun Pages(epub: Epub) {
-    val section = epub.section(0)!!
-    val padding = 15.dp
-
-    val density = LocalDensity.current
+    val padding = 40.dp
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val innerOffset = with(density) {
-            Offset(padding.toPx(), padding.toPx())
-        }
+        // TODO: Changing text changes layout, not text size???
+        val state = rememberPagesState(
+            epub,
+            TextStyle(fontSize = 20.sp),
+            minWidth,
+            minHeight,
+            padding,
+            onPosition = { /*TODO*/ })
 
-        val rendered = renderSection(section, minWidth - padding * 2f, minHeight - padding * 2f)
+        Box(Modifier.scrollable(Orientation.Horizontal, state.scrollController)) {
+            Page {
+                drawRect(Color.White)
+                val cached = state.nextPage.value
+                if (cached != null) {
+                    drawIntoCanvas { canvas ->
+                        state.section.paintPage(canvas, cached)
+                    }
+                }
+            }
 
-        Page(rendered.bitmap, rendered.pages[1], innerOffset)
-        Page(rendered.bitmap, rendered.pages[0], innerOffset, percentTurned = 0.7f)
-    }
-}
-
-@Immutable
-data class RenderedSection(
-    val paragraphs: MultiParagraph,
-    val bitmap: ImageBitmap,
-    val pages: List<Rect>
-)
-
-@Composable
-fun renderSection(
-    section: EpubSection,
-    innerWidth: Dp,
-    innerHeight: Dp,
-): RenderedSection {
-    val density = LocalDensity.current
-
-    val innerWidthPx: Float
-    val innerHeightPx: Float
-    with(density) {
-        innerWidthPx = innerWidth.toPx()
-        innerHeightPx = innerHeight.toPx()
-    }
-
-    val paragraphs = MultiParagraph(
-        section.text,
-        TextStyle(fontSize = 20.sp),
-        listOf(),
-        Int.MAX_VALUE,
-        false,
-        innerWidthPx,
-        density,
-        LocalFontLoader.current
-    )
-
-    val bitmap =
-        ImageBitmap(
-            ceil(paragraphs.width).toInt(),
-            ceil(paragraphs.height).toInt(),
-            ImageBitmapConfig.Argb8888
-        )
-    val contentsCanvas = Canvas(bitmap)
-    paragraphs.paint(contentsCanvas)
-
-    val pages = mutableListOf<Rect>()
-
-    var pageHeight = 0f
-    for (line in 0 until paragraphs.lineCount) {
-        val lineHeight = paragraphs.getLineHeight(line)
-        if (pageHeight + lineHeight < innerHeightPx) {
-            pageHeight += lineHeight
-        } else {
-            val offset = pages.lastOrNull()?.bottomLeft ?: Offset(0f, 0f)
-            val size = Size(innerWidthPx, pageHeight)
-            pages.add(Rect(offset, size))
-            pageHeight = 0f
+            Page(state.percentTurned) {
+                drawRect(Color.White)
+                val cached = state.currentPage.value
+                if (cached != null) {
+                    drawIntoCanvas { canvas ->
+                        state.section.paintPage(canvas, cached)
+                    }
+                }
+            }
         }
     }
-
-    return RenderedSection(paragraphs, bitmap, pages)
 }
 
 @Composable
 fun Page(
-    bitmap: ImageBitmap,
-    bitmapClip: Rect,
-    innerOffset: Offset,
-    percentTurned: Float = 1f,
+    percentTurned: State<Float> = mutableStateOf(1f),
+    draw: DrawScope.() -> Unit,
 ) {
     // TODO: Look at CoreText TextController for how to handle selection
-
-    val animatedPercentTurned = animateFloatAsState(percentTurned)
-
     BoxWithConstraints(Modifier.fillMaxSize()) {
         Surface(
             Modifier
                 .fillMaxSize()
                 .offset {
                     // NOTE: Computing the offset in here means we only re-layout, not re-compose
+                    val actualPercentTurned = percentTurned.value.clamp(0f, 1f)
+
                     IntOffset(
-                        (-maxWidth.toPx() * (1f - animatedPercentTurned.value)).roundToInt(),
+                        (-maxWidth.toPx() * (1f - actualPercentTurned)).roundToInt(),
                         0
                     )
                 },
             elevation = 15.dp
         ) {
-            Canvas(Modifier.fillMaxSize()) {
-                drawRect(Color.White)
-
-                drawImage(
-                    bitmap,
-                    srcOffset = bitmapClip.offset().round(),
-                    srcSize = bitmapClip.size().round(),
-                    dstOffset = innerOffset.round()
-                )
-            }
+            Canvas(Modifier.fillMaxSize(), draw)
         }
     }
 }
