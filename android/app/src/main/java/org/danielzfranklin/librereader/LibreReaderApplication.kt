@@ -22,7 +22,7 @@ class LibreReaderApplication : Application() {
 
     class LogDebugTree : Timber.DebugTree() {
         override fun createStackElementTag(element: StackTraceElement): String {
-            return "(${element.fileName}:${element.lineNumber})#${element.methodName}"
+            return "LRTAG(${element.fileName}:${element.lineNumber})#${element.methodName}"
         }
     }
 }
