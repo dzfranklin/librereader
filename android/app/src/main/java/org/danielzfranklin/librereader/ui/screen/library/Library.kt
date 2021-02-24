@@ -76,6 +76,8 @@ fun LibraryScreen(navController: NavHostController) {
     }
 }
 
+// TOOD: Fade and slide the shelf in with https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:compose/animation/animation-core/samples/src/main/java/androidx/compose/animation/core/samples/TransitionSamples.kt
+
 private const val EPUB_MIME = "application/epub+zip"
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -93,19 +95,18 @@ fun BookShelf(
     // outside
 
     val bookHorizontalPadding = 4.dp
-    val surroundingHorizontalPadding = 10.dp
+    val surroundingPadding = 10.dp
 
     BoxWithConstraints(Modifier.fillMaxSize(1f)) {
         val cols =
-            ((maxWidth - surroundingHorizontalPadding * 2f) / (bookWidth + bookHorizontalPadding * 2f)).toInt()
+            ((maxWidth - surroundingPadding * 2f) / (bookWidth + bookHorizontalPadding * 2f)).toInt()
 
         LazyVerticalGrid(
             GridCells.Fixed(cols),
             modifier
                 .width((bookWidth + bookHorizontalPadding * 2) * cols.toFloat())
-                .padding(horizontal = surroundingHorizontalPadding)
-                .padding(top = 10.dp)
-                .align(Alignment.TopCenter)
+                .align(Alignment.TopCenter),
+            contentPadding = PaddingValues(surroundingPadding)
         ) {
             for (book in books) {
                 item {

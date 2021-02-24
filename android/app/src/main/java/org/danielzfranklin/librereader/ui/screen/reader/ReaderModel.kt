@@ -1,8 +1,5 @@
 package org.danielzfranklin.librereader.ui.screen.reader
 
-import android.graphics.drawable.Drawable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.produceState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -12,13 +9,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.epub.Epub
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.model.BookStyle
 import org.danielzfranklin.librereader.repo.Repo
-import org.danielzfranklin.librereader.ui.screen.library.LibraryModel
-import timber.log.Timber
 
 class ReaderModel(
     private val repo: Repo,
@@ -52,5 +48,11 @@ class ReaderModel(
         val position = async { repo.getPositionFlow(bookId).map { it!! }.stateIn(this@ReaderModel) }
         val book = Book(bookId, epub.await(), style.await(), position.await())
         book
+    }
+
+    fun updatePosition(position: BookPosition) {
+        launch {
+            repo.updatePosition(position)
+        }
     }
 }

@@ -20,14 +20,16 @@ import androidx.core.util.lruCache
 import org.danielzfranklin.librereader.epub.EpubSection
 import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.util.round
-import timber.log.Timber
 import kotlin.math.round
 import kotlin.math.roundToInt
 
 @Immutable
 data class MeasuredPage(
     val start: BookPosition,
-    val index: Int,
+    val end: BookPosition,
+    val sectionIndex: Int,
+    val pageIndex: Int,
+    val isLastPageOfSection: Boolean,
     internal val charLength: Int,
     /** Must not be empty (Will contain empty paragraph instead) */
     internal val paras: List<MeasuredParagraph>,
@@ -67,9 +69,12 @@ class SectionRenderer(
         }
     }
 
+    private fun paraExists(index: Int) =
+        0 <= index && index <= section.text.paragraphStyles.size - 1
+
     private val parasCache = mutableMapOf<Int, MeasuredParagraph>()
     private fun para(index: Int): MeasuredParagraph? {
-        if (index < 0 || index > section.text.paragraphStyles.size - 1) return null
+        if (!paraExists(index)) return null
 
         val cached = parasCache[index]
         if (cached != null) return cached
@@ -163,9 +168,17 @@ class SectionRenderer(
             }
         }
 
+        val isEndOfSection =
+            lastLineIncluded == para.value.lineCount - 1 && !paraExists(para.index + 1)
+
+        val end = makePosition(start.charIndex + charLength)
+
         val result = MeasuredPage(
             start,
+            end,
+            section.index,
             index,
+            isEndOfSection,
             charLength,
             includedParas,
             topClip,

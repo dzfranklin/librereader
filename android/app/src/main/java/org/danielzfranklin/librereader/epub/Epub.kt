@@ -1,25 +1,41 @@
 package org.danielzfranklin.librereader.epub
 
+import androidx.compose.runtime.Immutable
 import nl.siegmann.epublib.domain.Book
 import org.danielzfranklin.librereader.model.BookID
 
-class Epub(val id: BookID, val maxSection: Int, private val getSection: (Int) -> EpubSection?) {
+@Immutable
+data class Epub(
+    val id: BookID,
+    val maxSection: Int,
+    private val getSection: (Int) -> EpubSection?,
+    private val sectionLengths: List<Int>
+) {
     constructor(id: BookID, epub: Book) : this(
         id,
         epub.spine.spineReferences.size - 1,
-        { if (it < epub.spine.spineReferences.size) EpubSection(id, epub, it) else null }
+        { if (it < epub.spine.spineReferences.size) EpubSection(id, epub, it) else null },
+        TODO()
     )
 
-    private val sections = mutableMapOf<Int, EpubSection>()
+    /** Unit: Characters */
+    private val length = sectionLengths.sum()
+
+    private val sectionsCache = mutableMapOf<Int, EpubSection>()
 
     fun section(index: Int): EpubSection? {
         if (index > maxSection || index < 0) return null
 
-        val cached = sections[index]
+        val cached = sectionsCache[index]
         if (cached != null) return cached
 
         val value = getSection(index) ?: return null
-        sections[index] = value
+        sectionsCache[index] = value
         return value
+    }
+
+    fun computePercent(sectionIndex: Int, charIndex: Int): Float {
+        val chars = sectionLengths.subList(0, sectionIndex).sum() + charIndex
+        return chars.toFloat() / length.toFloat()
     }
 }
