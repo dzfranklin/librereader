@@ -3,6 +3,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Required for <https://github.com/Kotlin/kotlinx.collections.immutable/issues/96>
+        jcenter()
         maven {
             url 'https://github.com/psiegman/mvn-repo/raw/master/releases'
         }
