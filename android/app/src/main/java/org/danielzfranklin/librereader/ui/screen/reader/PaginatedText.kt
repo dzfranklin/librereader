@@ -1,7 +1,6 @@
 package org.danielzfranklin.librereader.ui.screen.reader
 
-import androidx.compose.animation.core.TweenSpec
-import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,6 +8,7 @@ import androidx.compose.material.Button
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -20,14 +20,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.danielzfranklin.librereader.R
 import timber.log.Timber
-import kotlin.math.*
+import kotlin.math.floor
+import kotlin.math.roundToInt
 
 @Immutable
 data class PaginatedTextPosition(val section: Int, val charIndex: Int)
@@ -42,73 +45,107 @@ fun PaginatedText(
 
 }
 
-@Preview(device = Devices.PIXEL_2)
+@Immutable
+private data class PagePosition(val section: Int, val page: Float)
+
+@Preview(device = Devices.PIXEL_3)
 @Composable
-fun PaginatedTextSectionPreview() =
+private fun PaginatedSectionsPreview() {
+    val text = rememberAnnotatedStringPreview()
+
+    val targetPosition = remember { mutableStateOf(PagePosition(0, 0f)) }
+
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val string = stringResource(R.string.preview_section_text)
-        val annotatedString = remember {
-            with(AnnotatedString.Builder()) {
-                for (para in string.split("{{para_sep}}")) {
-                    pushStyle(ParagraphStyle(textIndent = TextIndent(firstLine = 20.sp)))
-                    append(para)
-                    pop()
-                }
-                toAnnotatedString()
-            }
-        }
-
         val renderer = rememberRenderer(
-            minWidth,
-            minHeight,
-            15.dp,
-            annotatedString,
-            TextStyle(fontSize = 22.sp),
-            LocalDensity.current,
-            LocalFontLoader.current
+            outerWidth = minWidth,
+            outerHeight = minHeight,
+            padding = 15.dp,
+            baseStyle = TextStyle(fontSize = 22.sp),
+            density = LocalDensity.current,
+            fontLoader = LocalFontLoader.current,
+            maxSection = 2,
+            makeSection = { text }
         )
-        renderer.layout() // TODO: Off render thread
-        val maxPosition = renderer.pages!!.size.toFloat()
 
-        val animatedPosition = remember { mutableStateOf(0f) }
-        val targetPosition = remember { mutableStateOf(animatedPosition.value) }
+        PaginatedSections(targetPosition.value, renderer)
 
-        if (targetPosition.value != animatedPosition.value) {
-            LaunchedEffect(targetPosition) {
-                animate(
-                    initialValue = animatedPosition.value,
-                    targetValue = targetPosition.value,
-                    animationSpec = TweenSpec(1000)
-                ) { value, _ ->
-                    animatedPosition.value = value
+        Column(
+            Modifier
+                .padding(vertical = 5.dp)
+                .fillMaxWidth()
+                .alpha(0.7f)
+        ) {
+            Text(
+                targetPosition.value.toString(),
+                Modifier
+                    .background(Color.Gray)
+                    .padding(2.dp)
+                    .align(Alignment.CenterHorizontally),
+                color = Color.White
+            )
+
+            Row(
+                Modifier
+                    .padding(vertical = 5.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Button(
+                    {
+                        val prev = targetPosition.value
+                        var target = prev.copy(page = prev.page - 1f)
+                        if (target.page < 0) {
+                            target = PagePosition(target.section - 1, 0f)
+                        }
+                        targetPosition.value = target
+                    },
+                    Modifier.padding(horizontal = 5.dp)
+                ) {
+                    Text("Prev")
                 }
-            }
-        }
 
-        PaginatedTextSection(renderer, animatedPosition.value)
-
-        Row(Modifier.padding(vertical = 5.dp).align(Alignment.Center).alpha(0.7f)) {
-            Button(
-                { targetPosition.value = max(0f, round(targetPosition.value - 1)) },
-                Modifier.padding(horizontal = 5.dp)
-            ) {
-                Text("Prev")
-            }
-
-            Button(
-                { targetPosition.value = min(maxPosition, round(targetPosition.value + 1)) },
-                Modifier.padding(horizontal = 5.dp)
-            ) {
-                Text("Next")
+                Button(
+                    {
+                        val prev = targetPosition.value
+                        var target = prev.copy(page = prev.page + 1f)
+                        val section = renderer[target.section]
+                        if (section != null) {
+                            if (target.page > section.lastPage!!) {
+                                target = PagePosition(target.section + 1, 0f)
+                            }
+                            targetPosition.value = target
+                        }
+                    },
+                    Modifier.padding(horizontal = 5.dp)
+                ) {
+                    Text("Next")
+                }
             }
         }
     }
+}
+
+
+@Composable
+private fun PaginatedSections(position: PagePosition, renderer: Renderer) {
+    val currentSection = renderer[position.section]
+        ?: throw IllegalArgumentException("Position $position does not exist")
+    val nextSection = renderer[position.section + 1]
+
+    // If last page in the section is partly turned
+    if (nextSection != null && position.page > currentSection.lastPage!!) {
+        // ... show the first page of the next section behind it
+        PaginatedSection(nextSection, 0f)
+    }
+
+    PaginatedSection(currentSection, position.page)
+}
 
 /**
  *  @param position 1.7 means current page is 1, and we're 70% turned to 2
  */
 @Composable
-fun PaginatedTextSection(renderer: SectionRenderer, position: Float) {
+private fun PaginatedSection(renderer: SectionRenderer, position: Float) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val pages = renderer.pages ?: throw IllegalArgumentException("Renderer not laid out")
 
@@ -149,7 +186,7 @@ fun PaginatedTextSection(renderer: SectionRenderer, position: Float) {
 }
 
 @Composable
-fun PageCanvas(page: PageRenderer?, turn: Dp = 0.dp) {
+private fun PageCanvas(page: PageRenderer?, turn: Dp = 0.dp) {
     Surface(
         Modifier
             .fillMaxSize()
@@ -177,22 +214,16 @@ fun PageCanvas(page: PageRenderer?, turn: Dp = 0.dp) {
 }
 
 @Composable
-fun rememberRenderer(
-    outerWidth: Dp,
-    outerHeight: Dp,
-    padding: Dp,
-    annotatedString: AnnotatedString,
-    baseStyle: TextStyle,
-    density: Density,
-    fontLoader: Font.ResourceLoader
-) = remember(annotatedString, outerWidth, outerHeight, padding, baseStyle, density, fontLoader) {
-    SectionRenderer(
-        outerWidth,
-        outerHeight,
-        padding,
-        annotatedString,
-        baseStyle,
-        density,
-        fontLoader
-    )
+private fun rememberAnnotatedStringPreview(): AnnotatedString {
+    val string = stringResource(R.string.preview_section_text)
+    return remember {
+        with(AnnotatedString.Builder()) {
+            for (para in string.split("{{para_sep}}")) {
+                pushStyle(ParagraphStyle(textIndent = TextIndent(firstLine = 20.sp)))
+                append(para)
+                pop()
+            }
+            toAnnotatedString()
+        }
+    }
 }

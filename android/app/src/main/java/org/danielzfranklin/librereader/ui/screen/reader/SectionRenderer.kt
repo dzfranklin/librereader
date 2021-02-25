@@ -43,6 +43,7 @@ class SectionRenderer(
     private var measures: MultiParagraph? = null
     var pages: List<PageRenderer>? = null
         private set
+    val lastPage get() = pages?.let { it.size - 1 }
 
     fun findPage(char: Int): PageRenderer? {
         val pages = pages ?: throw IllegalStateException("Not laid out")
