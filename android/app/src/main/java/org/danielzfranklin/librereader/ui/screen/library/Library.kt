@@ -173,7 +173,9 @@ fun Book(book: LibraryModel.Book, modifier: Modifier = Modifier, onClick: () -> 
 
                 LinearProgressIndicator(
                     progress = book.progress,
-                    Modifier.fillMaxWidth(1f).alpha(0.9f),
+                    Modifier
+                        .fillMaxWidth(1f)
+                        .alpha(0.9f),
                     color = book.textColor,
                     backgroundColor = book.bgColor
                 )
