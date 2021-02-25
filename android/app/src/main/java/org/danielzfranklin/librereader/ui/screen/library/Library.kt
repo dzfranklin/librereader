@@ -129,9 +129,12 @@ fun Book(book: LibraryModel.Book, modifier: Modifier = Modifier, onClick: () -> 
         contentColor = book.textColor,
         elevation = 4.dp,
         shape = RoundedCornerShape(8.dp),
-        modifier = modifier.clickable(onClickLabel = stringResource(R.string.read_book)) { onClick() }
+        modifier = modifier
     ) {
-        Box {
+        Box(Modifier
+            // adding clickable here instead of to the surface ensures the ripple is correctly clipped
+            .clickable(onClickLabel = stringResource(R.string.read_book)) { onClick() }
+        ) {
             Image(
                 book.cover,
                 stringResource(R.string.cover),
