@@ -58,7 +58,6 @@ import org.danielzfranklin.librereader.epub.EpubSection
 import org.danielzfranklin.librereader.model.BookID
 import org.danielzfranklin.librereader.model.BookPosition
 import org.danielzfranklin.librereader.ui.LocalRepo
-import org.danielzfranklin.librereader.util.clamp
 import timber.log.Timber
 import kotlin.coroutines.CoroutineContext
 import kotlin.math.roundToInt
@@ -367,7 +366,7 @@ class PagesTurnState(
             }
         }
 
-        val newCurrent = unclampedNewCurrent.clamp(0f, 1f)
+        val newCurrent = unclampedNewCurrent.coerceIn(0f, 1f)
         _current.value = newCurrent
 
         val overagePercent = unclampedNewCurrent - newCurrent
