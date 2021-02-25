@@ -1,7 +1,6 @@
 package org.danielzfranklin.librereader.ui.screen.reader
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
@@ -12,6 +11,7 @@ import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.platform.LocalDensity
@@ -197,20 +197,16 @@ private fun PageCanvas(page: PageRenderer?, turn: Dp = 0.dp) {
                         .toPx()
                         .roundToInt(), 0
                 )
+            }
+            .drawWithContent {
+                drawContent()
+                drawIntoCanvas {
+                    Timber.i("Drawing canvas")
+                    page?.paint(it)
+                }
             },
         elevation = 15.dp
-    ) {
-        Canvas(
-            Modifier
-                .fillMaxSize()
-
-        ) {
-            drawIntoCanvas {
-                Timber.i("Drawing canvas")
-                page?.paint(it)
-            }
-        }
-    }
+    ) {}
 }
 
 @Composable
