@@ -97,7 +97,7 @@ fun BookShelf(
     val bookHorizontalPadding = 4.dp
     val surroundingPadding = 10.dp
 
-    BoxWithConstraints(Modifier.fillMaxSize(1f)) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
         val cols =
             ((maxWidth - surroundingPadding * 2f) / (bookWidth + bookHorizontalPadding * 2f)).toInt()
 
