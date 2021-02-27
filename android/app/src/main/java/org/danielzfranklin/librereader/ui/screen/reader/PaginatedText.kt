@@ -6,6 +6,7 @@ import androidx.compose.animation.core.copy
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.Surface
@@ -17,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontLoader
 import androidx.compose.ui.res.stringResource
@@ -68,7 +70,20 @@ fun PaginatedText(
             ), renderer
         )
 
-        Box(Modifier.fillMaxSize()) {
+        Box(Modifier
+            .fillMaxSize()
+            .pointerInput(constraints, animPosition) {
+                detectTapGestures(onTap = { offset ->
+                    when {
+                        offset.x < constraints.minWidth * 0.3f ->
+                            animPosition.animateBy(-1)
+
+                        offset.x > constraints.minWidth * 0.7f ->
+                            animPosition.animateBy(1)
+                    }
+                })
+            }
+        ) {
             PaginatedSections(animPosition.position.value, renderer)
         }
     }
