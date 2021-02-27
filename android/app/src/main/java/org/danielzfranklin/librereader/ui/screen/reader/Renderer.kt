@@ -22,7 +22,7 @@ class Renderer(
     makeSection: (Int) -> AnnotatedString,
 ) {
     private val cache: LruCache<Int, SectionRenderer> = lruCache(cacheSize, create = { index ->
-        if (index > maxSection) return@lruCache null
+        if (index < 0 || index > maxSection) return@lruCache null
 
         val renderer = SectionRenderer(
             outerWidth,
