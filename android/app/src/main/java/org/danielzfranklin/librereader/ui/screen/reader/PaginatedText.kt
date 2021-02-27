@@ -186,6 +186,11 @@ private class SectionsAnimationState constructor(
 
         when {
             remainingDelta > 0 -> {
+                if (section.value == renderer.maxSection)  {
+                    _isRunning.value = false
+                    return
+                }
+
                 pageAnim.animateTo(
                     sectionMax + NEARLY_ONE,
                     if (animationHasBegun) tween(durationMillis) else tween(
@@ -208,6 +213,11 @@ private class SectionsAnimationState constructor(
             }
 
             remainingDelta < 0 -> {
+                if (section.value == 0) {
+                    _isRunning.value = false
+                    return
+                }
+
                 section.value--
                 val nextSectionMax = renderer[section.value]!!.lastPage!!
                 setAnimValue(nextSectionMax.toFloat() + 0.999f)
