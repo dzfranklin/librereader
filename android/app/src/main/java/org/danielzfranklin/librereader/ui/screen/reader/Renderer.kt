@@ -34,9 +34,6 @@ class Renderer(
             fontLoader
         )
 
-        // TODO: Do this off main thread, add loading indicators
-        renderer.layout()
-
         renderer
     })
 

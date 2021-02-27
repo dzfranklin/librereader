@@ -27,30 +27,25 @@ data class PageRenderer(
     val background = sectionRenderer.background
 }
 
+@Immutable
 class SectionRenderer(
     val outerWidth: Dp,
     val outerHeight: Dp,
     private val padding: Dp,
-    private val annotatedString: AnnotatedString,
-    private val baseStyle: TextStyle,
-    private val density: Density,
-    private val fontLoader: Font.ResourceLoader
+    annotatedString: AnnotatedString,
+    baseStyle: TextStyle,
+    density: Density,
+    fontLoader: Font.ResourceLoader
 ) {
     private val innerWidthPx = with(density) { (outerWidth - padding * 2f).toPx() }
     private val innerHeightPx = with(density) { (outerHeight - padding * 2f).toPx() }
     private val paddingPx = with(density) { padding.toPx() }
 
-    private var measures: MultiParagraph? = null
-    var pages: List<PageRenderer>? = null
-        private set
-    val lastPage get() = pages?.let { it.size - 1 }
+    private var measures: MultiParagraph
+    val pages: List<PageRenderer>
+    val lastPage: Int
 
-    fun findPage(char: Int): PageRenderer? {
-        val pages = pages ?: throw IllegalStateException("Not laid out")
-        return pages.find { it.startChar <= char && char <= it.endChar }
-    }
-
-    fun layout() {
+    init {
         val measures = MultiParagraph(
             annotatedString,
             baseStyle,
@@ -103,6 +98,7 @@ class SectionRenderer(
 
         this.measures = measures
         this.pages = pages
+        lastPage = pages.size - 1
     }
 
     private fun makeMeasuredPage(
@@ -125,9 +121,14 @@ class SectionRenderer(
 
     val background = baseStyle.background
 
+    fun findPage(char: Int): PageRenderer? {
+        val pages = pages
+        return pages.find { it.startChar <= char && char <= it.endChar }
+    }
+
     /** Canvas expected to be of size width x height */
     fun paintPage(canvas: Canvas, page: PageRenderer) {
-        val measures = measures ?: throw IllegalStateException("Not loaded")
+        val measures = measures
 
         canvas.save()
         canvas.translate(paddingPx, -page.topClip + paddingPx)

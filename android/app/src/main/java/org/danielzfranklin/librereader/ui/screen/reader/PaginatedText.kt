@@ -162,7 +162,7 @@ private class SectionsAnimationState constructor(
 
         _isRunning.value = true
 
-        val sectionMax = renderer[section.value]!!.lastPage!!
+        val sectionMax = renderer[section.value]!!.lastPage
         val start = pageAnim.value.roundToInt()
 
         val sectionDelta = delta.coerceIn(-start, sectionMax - start)
@@ -219,7 +219,7 @@ private class SectionsAnimationState constructor(
                 }
 
                 section.value--
-                val nextSectionMax = renderer[section.value]!!.lastPage!!
+                val nextSectionMax = renderer[section.value]!!.lastPage
                 setAnimValue(nextSectionMax.toFloat() + 0.999f)
                 pageAnim.animateTo(
                     nextSectionMax.toFloat(),
@@ -262,7 +262,7 @@ private fun PaginatedSections(position: PagePosition, renderer: Renderer) {
     val nextSection = renderer[position.section + 1]
 
     // If last page in the section is partly turned
-    if (nextSection != null && position.page > currentSection.lastPage!!) {
+    if (nextSection != null && position.page > currentSection.lastPage) {
         // ... show the first page of the next section behind it
         PaginatedSection(nextSection, 0f)
     }
@@ -276,7 +276,7 @@ private fun PaginatedSections(position: PagePosition, renderer: Renderer) {
 @Composable
 private fun PaginatedSection(renderer: SectionRenderer, position: Float) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val pages = renderer.pages ?: throw IllegalArgumentException("Renderer not laid out")
+        val pages = renderer.pages
 
         require(renderer.outerWidth == minWidth)
         require(renderer.outerHeight == minHeight)
@@ -308,7 +308,7 @@ private fun PaginatedSection(renderer: SectionRenderer, position: Float) {
 
         // If we've turned past the end of the section, the next section is responsible for
         // rendering the next page
-        if (turnPercent != 0f && position < renderer.lastPage!!) {
+        if (turnPercent != 0f && position < renderer.lastPage) {
             PageCanvas(pages.getOrNull(index + 1))
         }
 
