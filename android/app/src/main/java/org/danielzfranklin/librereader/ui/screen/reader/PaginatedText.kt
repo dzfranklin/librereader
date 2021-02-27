@@ -4,6 +4,7 @@ import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.copy
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
@@ -14,7 +15,6 @@ import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.platform.LocalDensity
@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.R
-import timber.log.Timber
 import kotlin.coroutines.CoroutineContext
 import kotlin.math.abs
 import kotlin.math.floor
@@ -309,35 +308,56 @@ private fun PaginatedSection(renderer: SectionRenderer, position: Float) {
         // If we've turned past the end of the section, the next section is responsible for
         // rendering the next page
         if (turnPercent != 0f && position < renderer.lastPage) {
-            PageCanvas(pages.getOrNull(index + 1))
+            val page = pages.getOrNull(index + 1)
+            if (page == null) {
+                BlankPage(renderer.background)
+            } else {
+                Page(page)
+            }
         }
 
-        PageCanvas(pages.getOrNull(index), turn)
+        Page(pages[index], turn)
     }
 }
 
 @Composable
-private fun PageCanvas(page: PageRenderer?, turn: Dp = 0.dp) {
+private fun BlankPage(background: Color, turn: Dp = 0.dp) {
     Surface(
         Modifier
             .fillMaxSize()
-            .background(page?.background ?: Color.Transparent)
+            .background(background)
             .offset {
                 IntOffset(
                     -turn
                         .toPx()
                         .roundToInt(), 0
                 )
-            }
-            .drawWithContent {
-                drawContent()
-                drawIntoCanvas {
-                    Timber.i("Drawing canvas")
-                    page?.paint(it)
-                }
             },
         elevation = 15.dp
     ) {}
+}
+
+@Composable
+private fun Page(page: PageRenderer, turn: Dp = 0.dp) {
+    Surface(
+        Modifier
+            .fillMaxSize()
+            .background(page.background)
+            .offset {
+                IntOffset(
+                    -turn
+                        .toPx()
+                        .roundToInt(), 0
+                )
+            },
+        elevation = 15.dp
+    ) {
+        Canvas(Modifier.fillMaxSize()) {
+            drawIntoCanvas {
+                page.paint(it)
+            }
+        }
+    }
 }
 
 @Composable
