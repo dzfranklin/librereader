@@ -46,9 +46,46 @@ fun PaginatedText(
     initialPosition: PaginatedTextPosition,
     makeSection: (Int) -> AnnotatedString,
     maxSection: Int,
+    baseStyle: TextStyle,
     padding: Dp = 15.dp,
 ) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val renderer = rememberRenderer(
+            outerWidth = minWidth,
+            outerHeight = minHeight,
+            padding = padding,
+            baseStyle = baseStyle,
+            density = LocalDensity.current,
+            fontLoader = LocalFontLoader.current,
+            maxSection = maxSection,
+            makeSection = makeSection
+        )
 
+        val animPosition = rememberSectionsAnimationState(
+            PagePosition(
+                initialPosition.section,
+                renderer[initialPosition.section]!!.findPage(initialPosition.charIndex)!!.index.toFloat()
+            ), renderer
+        )
+
+        Box(Modifier.fillMaxSize()) {
+            PaginatedSections(animPosition.position.value, renderer)
+        }
+    }
+
+}
+
+@Preview(device = Devices.PIXEL_3)
+@Composable
+private fun PaginatedTextPreview() {
+    val text = rememberAnnotatedStringPreview()
+
+    PaginatedText(
+        PaginatedTextPosition(0, 0),
+        { text },
+        2,
+        TextStyle(fontSize = 22.sp)
+    )
 }
 
 @Immutable
@@ -145,7 +182,7 @@ private class SectionsAnimationState constructor(
     private val _isRunning = mutableStateOf(false)
     val isRunning: State<Boolean> = _isRunning
 
-    fun animateBy(delta: Int, durationMillis: Int, sequentialAnimation: Boolean = false) {
+    fun animateBy(delta: Int, durationMillis: Int = 1000, sequentialAnimation: Boolean = false) {
         launch {
             animateBySuspended(delta, durationMillis, sequentialAnimation)
         }
@@ -185,7 +222,7 @@ private class SectionsAnimationState constructor(
 
         when {
             remainingDelta > 0 -> {
-                if (section.value == renderer.maxSection)  {
+                if (section.value == renderer.maxSection) {
                     _isRunning.value = false
                     return
                 }
