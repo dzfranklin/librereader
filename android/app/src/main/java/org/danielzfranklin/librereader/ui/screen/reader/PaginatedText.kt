@@ -1,6 +1,9 @@
 package org.danielzfranklin.librereader.ui.screen.reader
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.animateTo
+import androidx.compose.animation.core.copy
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
@@ -27,8 +30,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.R
 import timber.log.Timber
+import kotlin.coroutines.CoroutineContext
+import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
@@ -53,8 +60,6 @@ private data class PagePosition(val section: Int, val page: Float)
 private fun PaginatedSectionsPreview() {
     val text = rememberAnnotatedStringPreview()
 
-    val targetPosition = remember { mutableStateOf(PagePosition(0, 0f)) }
-
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val renderer = rememberRenderer(
             outerWidth = minWidth,
@@ -67,7 +72,9 @@ private fun PaginatedSectionsPreview() {
             makeSection = { text }
         )
 
-        PaginatedSections(targetPosition.value, renderer)
+        val animPosition = rememberSectionsAnimationState(PagePosition(0, 0f), renderer)
+
+        PaginatedSections(animPosition.position.value, renderer)
 
         Column(
             Modifier
@@ -76,10 +83,10 @@ private fun PaginatedSectionsPreview() {
                 .alpha(0.7f)
         ) {
             Text(
-                targetPosition.value.toString(),
+                "${animPosition.position.value}",
                 Modifier
-                    .background(Color.Gray)
                     .padding(2.dp)
+                    .background(Color.Gray)
                     .align(Alignment.CenterHorizontally),
                 color = Color.White
             )
@@ -91,32 +98,17 @@ private fun PaginatedSectionsPreview() {
                 horizontalArrangement = Arrangement.Center
             ) {
                 Button(
-                    {
-                        val prev = targetPosition.value
-                        var target = prev.copy(page = prev.page - 1f)
-                        if (target.page < 0) {
-                            target = PagePosition(target.section - 1, 0f)
-                        }
-                        targetPosition.value = target
-                    },
-                    Modifier.padding(horizontal = 5.dp)
+                    { animPosition.animateBy(-2, 1000) },
+                    Modifier.padding(horizontal = 5.dp),
+                    enabled = !animPosition.isRunning.value
                 ) {
                     Text("Prev")
                 }
 
                 Button(
-                    {
-                        val prev = targetPosition.value
-                        var target = prev.copy(page = prev.page + 1f)
-                        val section = renderer[target.section]
-                        if (section != null) {
-                            if (target.page > section.lastPage!!) {
-                                target = PagePosition(target.section + 1, 0f)
-                            }
-                            targetPosition.value = target
-                        }
-                    },
-                    Modifier.padding(horizontal = 5.dp)
+                    { animPosition.animateBy(2, 1000) },
+                    Modifier.padding(horizontal = 5.dp),
+                    enabled = !animPosition.isRunning.value
                 ) {
                     Text("Next")
                 }
@@ -125,6 +117,133 @@ private fun PaginatedSectionsPreview() {
     }
 }
 
+@Composable
+private fun rememberSectionsAnimationState(
+    initialPosition: PagePosition,
+    renderer: Renderer
+): SectionsAnimationState {
+    val scope = rememberCoroutineScope()
+    return remember(initialPosition, renderer) {
+        SectionsAnimationState(
+            initialPosition,
+            renderer,
+            scope.coroutineContext
+        )
+    }
+}
+
+private class SectionsAnimationState constructor(
+    initialPosition: PagePosition,
+    val renderer: Renderer,
+    override val coroutineContext: CoroutineContext,
+) : CoroutineScope {
+    private var section = mutableStateOf(initialPosition.section)
+
+    private var pageAnim = AnimationState(initialPosition.page)
+
+    val position = derivedStateOf { PagePosition(section.value, pageAnim.value) }
+
+    private val _isRunning = mutableStateOf(false)
+    val isRunning: State<Boolean> = _isRunning
+
+    fun animateBy(delta: Int, durationMillis: Int, sequentialAnimation: Boolean = false) {
+        launch {
+            animateBySuspended(delta, durationMillis, sequentialAnimation)
+        }
+    }
+
+    private suspend fun animateBySuspended(
+        delta: Int,
+        durationMillis: Int,
+        sequential: Boolean = false
+    ) {
+        // NOTE: We take a duration instead of an AnimationSpec because we need to break the
+        // animation into section-sized chunks and that makes it much simpler.
+
+        _isRunning.value = true
+
+        val sectionMax = renderer[section.value]!!.lastPage!!
+        val start = pageAnim.value.roundToInt()
+
+        val sectionDelta = delta.coerceIn(-start, sectionMax - start)
+        val remainingDelta = delta - sectionDelta
+
+        var animationHasBegun = sequential
+        if (sectionDelta != 0) {
+            // TODO: sequentialAnimation appears not to work correctly here when we animate forwards
+            // by two, and this is called on the recursive call
+            pageAnim.animateTo(
+                (start + sectionDelta).toFloat(),
+                if (sequential) tween(durationMillis) else tween(
+                    (durationMillis * abs(sectionDelta).toFloat() / abs(
+                        delta
+                    ).toFloat()).roundToInt()
+                ),
+                sequentialAnimation = sequential
+            )
+            animationHasBegun = true
+        }
+
+        when {
+            remainingDelta > 0 -> {
+                pageAnim.animateTo(
+                    sectionMax + NEARLY_ONE,
+                    if (animationHasBegun) tween(durationMillis) else tween(
+                        (durationMillis * NEARLY_ONE / abs(
+                            delta
+                        ).toFloat()).roundToInt()
+                    ),
+                    animationHasBegun
+                )
+                animationHasBegun = true
+
+                section.value++
+                setAnimValue(0f)
+                val nextDelta = remainingDelta - 1
+                animateBySuspended(
+                    nextDelta,
+                    durationMillis,
+                    animationHasBegun
+                )
+            }
+
+            remainingDelta < 0 -> {
+                section.value--
+                val nextSectionMax = renderer[section.value]!!.lastPage!!
+                setAnimValue(nextSectionMax.toFloat() + 0.999f)
+                pageAnim.animateTo(
+                    nextSectionMax.toFloat(),
+                    if (animationHasBegun) tween(durationMillis) else tween(
+                        (durationMillis * NEARLY_ONE / abs(
+                            delta
+                        ).toFloat()).roundToInt()
+                    ),
+                    animationHasBegun
+                )
+                animationHasBegun = true
+
+                val nextDelta = remainingDelta + 1
+                animateBySuspended(
+                    nextDelta,
+                    durationMillis,
+                    animationHasBegun
+                )
+            }
+
+            else -> {
+                _isRunning.value = false
+            }
+        }
+    }
+
+    private fun setAnimValue(value: Float) {
+        pageAnim = pageAnim.copy(value = value)
+    }
+
+    companion object {
+        private const val NEARLY_ONE = 0.999f
+    }
+}
 
 @Composable
 private fun PaginatedSections(position: PagePosition, renderer: Renderer) {
@@ -177,7 +296,9 @@ private fun PaginatedSection(renderer: SectionRenderer, position: Float) {
         val turnPercent = position - index
         val turn = effectivePageWidth * turnPercent
 
-        if (turnPercent != 0f) {
+        // If we've turned past the end of the section, the next section is responsible for
+        // rendering the next page
+        if (turnPercent != 0f && position < renderer.lastPage!!) {
             PageCanvas(pages.getOrNull(index + 1))
         }
 
