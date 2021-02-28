@@ -251,7 +251,11 @@ private class SectionsAnimationState constructor(
         val sectionMax = renderer[position.value.section]!!.lastPage
         val start = position.value.page
 
-        val sectionDelta = delta.coerceIn(-start, (sectionMax + NEARLY_ONE) - start)
+        val sectionDelta = if (_position.section < renderer.maxSection) {
+            delta.coerceIn(-start, (sectionMax + NEARLY_ONE) - start)
+        } else {
+            delta.coerceIn(-start, sectionMax - start)
+        }
         val remainingDelta = delta - sectionDelta
         _position = _position.copy(page = start + sectionDelta)
 
