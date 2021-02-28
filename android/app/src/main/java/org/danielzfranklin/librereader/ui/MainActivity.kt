@@ -6,7 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
@@ -36,7 +36,7 @@ fun App() {
 
     LibreReaderTheme {
         Scaffold {
-            Providers(LocalRepo provides repo) {
+            CompositionLocalProvider(LocalRepo provides repo) {
                 Nav()
             }
         }

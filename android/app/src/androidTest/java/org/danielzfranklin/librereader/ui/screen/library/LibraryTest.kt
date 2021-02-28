@@ -1,7 +1,7 @@
 package org.danielzfranklin.librereader.ui.screen.library
 
 import android.graphics.Bitmap
-import androidx.compose.runtime.Providers
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.navigation.NavDeepLinkRequest
@@ -58,7 +58,7 @@ class LibraryTest {
 
         rule.setContent {
             LibreReaderTheme {
-                Providers(LocalRepo provides repo) {
+                CompositionLocalProvider(LocalRepo provides repo) {
                     LibraryScreen(navController)
                 }
             }
