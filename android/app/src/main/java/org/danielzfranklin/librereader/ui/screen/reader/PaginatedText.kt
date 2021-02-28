@@ -23,11 +23,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -406,10 +403,24 @@ private fun Page(page: PageRenderer, turn: State<Float> = mutableStateOf(0f)) {
     }
 }
 
+private var drawsDebug = 0
+private const val SHOW_DEBUG_DRAW_COUNT = true
+private val drawsDebugPaint = if (SHOW_DEBUG_DRAW_COUNT) {
+    NativePaint().apply {
+        color = Color.Red.toArgb()
+        textSize = 100f
+        isFakeBoldText = true
+    }
+} else null
+
 private fun Modifier.page(page: PageRenderer) = drawBehind {
     drawIntoCanvas { canvas ->
-        Timber.i("Drawing page")
         page.paint(canvas)
+
+        if (SHOW_DEBUG_DRAW_COUNT) {
+            drawsDebug++
+            canvas.nativeCanvas.drawText(drawsDebug.toString(), size.width - 210f, 200f, drawsDebugPaint!!)
+        }
     }
 }
 
