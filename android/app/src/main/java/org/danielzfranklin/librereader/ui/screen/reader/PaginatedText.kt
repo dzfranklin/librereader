@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontLoader
 import androidx.compose.ui.res.stringResource
@@ -41,7 +42,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.R
-import timber.log.Timber
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.round
@@ -342,65 +342,54 @@ private fun PaginatedSections(position: State<PagePosition>, renderer: Renderer)
 @Composable
 private fun PaginatedSection(renderer: SectionRenderer, position: State<Float>) {
     val index = remember { derivedStateOf { floor(position.value).roundToInt() } }
-    val turnPercent = remember { derivedStateOf { position.value - index.value } }
+    val selectionEnabled = remember { mutableStateOf(true) }
 
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val pages = renderer.pages
+    val shadow = ShadowConfig(
+        maxAtPercent = 0.3f,
+        maxWidthPx = with(LocalDensity.current) { 20.dp.toPx() },
+    )
+    val pages = renderer.pages
 
-        require(renderer.outerWidth == minWidth)
-        require(renderer.outerHeight == minHeight)
-
-        /*  Turn forwards:
-              position = 1      position = 1.3
-            |111111111|      |1111111|222|
-            |111111111|  =>  |1111111|222|
-            |111111111|      |1111111|222|
-
-            Turn backwards:
-             position = 2      position = 1.3
-            |222222222|      |1111111|222|
-            |222222222|  =>  |1111111|222|
-            |222222222|      |1111111|222|
-
-            Turn backwards:
-             position = 2      position = 1.7
-            |222222222|      |111|2222222|
-            |222222222|  =>  |111|2222222|
-            |222222222|      |111|2222222|
-         */
+    Layout(content = {
+        Page(pages[index.value], selectionEnabled)
 
         // If we've turned past the end of the section, the next section is responsible for
         // rendering the next page
         val page = pages.getOrNull(index.value + 1)
         if (page != null) {
-            Page(page)
+            Page(page, remember { mutableStateOf(false) })
+        } else {
+            Box(Modifier.fillMaxSize())
         }
+    }) { (current, next), constraints ->
+        require(renderer.outerWidth.toPx().roundToInt() == constraints.maxWidth)
+        require(renderer.outerHeight.toPx().roundToInt() == constraints.maxHeight)
 
-        Page(pages[index.value], turnPercent)
+        val placedCurrent = current.measure(constraints)
+        val placedNext = next.measure(constraints)
+
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            placedCurrent.placeWithLayer(0, 0, 1f) {
+                val turnPercent = position.value - index.value
+                translationX = turnPercent * -constraints.maxWidth.toFloat()
+                shadowElevation = shadow.elevation(turnPercent)
+                shape = PageShape
+            }
+
+            placedNext.place(0, 0)
+        }
     }
 }
 
 @Composable
-private fun Page(page: PageRenderer, turn: State<Float> = mutableStateOf(0f)) {
-    val density = LocalDensity.current
-    val shadow = ShadowConfig(
-        maxAtPercent = 0.3f,
-        maxWidthPx = with(density) { 20.dp.toPx() },
+private fun Page(page: PageRenderer, selectionEnabled: State<Boolean>) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(page.background)
+            .page(page)
+            .selectablePage(page, selectionEnabled)
     )
-    val selectionEnabled = derivedStateOf { true }
-
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val width = constraints.minWidth.toFloat()
-
-        Box(
-            Modifier
-                .fillMaxSize()
-                .pageTurn(turn, width, shadow)
-                .background(page.background)
-                .page(page)
-                .selectablePage(page, selectionEnabled)
-        )
-    }
 }
 
 private var drawsDebug = 0
@@ -419,7 +408,12 @@ private fun Modifier.page(page: PageRenderer) = drawBehind {
 
         if (SHOW_DEBUG_DRAW_COUNT) {
             drawsDebug++
-            canvas.nativeCanvas.drawText(drawsDebug.toString(), size.width - 210f, 200f, drawsDebugPaint!!)
+            canvas.nativeCanvas.drawText(
+                drawsDebug.toString(),
+                size.width - 210f,
+                200f,
+                drawsDebugPaint!!
+            )
         }
     }
 }
