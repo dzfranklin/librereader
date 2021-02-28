@@ -5,12 +5,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.MultiParagraph
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import timber.log.Timber
 
 @Immutable
 data class PageRenderer(
@@ -25,6 +30,42 @@ data class PageRenderer(
         sectionRenderer.paintPage(canvas, this)
 
     val background = sectionRenderer.background
+
+    val lastOffset = endChar - startChar
+
+    /** Returns the character offset (in page space) closest to the given graphical position
+     *  (in page space).
+     */
+    fun getOffsetForPosition(position: Offset): Int {
+        val globalPosition = Offset(-padding, topClip - padding) + position
+        val globalOffset = sectionRenderer.measures.getOffsetForPosition(globalPosition)
+        return (globalOffset - startChar).coerceIn(0, endChar)
+    }
+
+    /** Returns the TextRange (in page space) of the word at the given character offset (in page
+     * space).
+     */
+    fun getWordBoundary(offset: Int): TextRange {
+        val globalOffset = startChar + offset
+        val globalRange = sectionRenderer.measures.getWordBoundary(globalOffset)
+        return TextRange(
+            (globalRange.start - startChar).coerceIn(0, lastOffset),
+            (globalRange.end - startChar).coerceIn(0, lastOffset)
+        )
+    }
+
+    /** Get the text direction of the character at the given offset (in page space) */
+    fun getBidiRunDirection(offset: Int) =
+        sectionRenderer.measures.getBidiRunDirection(startChar + offset)
+
+    /** Returns path (in page space) that enclose the given text range (in page space). */
+    fun getPathForRange(start: Int, end: Int): Path {
+        val path = sectionRenderer.measures.getPathForRange(startChar + start, startChar + end)
+        path.translate(Offset(padding, -topClip + padding))
+        return path
+    }
+
+    private val padding = sectionRenderer.paddingPx
 }
 
 @Immutable
@@ -37,11 +78,16 @@ class SectionRenderer(
     density: Density,
     fontLoader: Font.ResourceLoader
 ) {
-    private val innerWidthPx = with(density) { (outerWidth - padding * 2f).toPx() }
-    private val innerHeightPx = with(density) { (outerHeight - padding * 2f).toPx() }
-    private val paddingPx = with(density) { padding.toPx() }
+    val background = baseStyle.background
 
-    private var measures: MultiParagraph
+    private val outerWidthPx = with(density) { outerWidth.toPx() }
+    private val outerHeightPx = with(density) { outerHeight.toPx() }
+    internal val paddingPx = with(density) { padding.toPx() }
+
+    private val innerWidthPx = outerWidthPx - paddingPx * 2f
+    private val innerHeightPx = outerHeightPx - paddingPx * 2f
+
+    internal var measures: MultiParagraph
     val pages: List<PageRenderer>
     val lastPage: Int
 
@@ -118,8 +164,6 @@ class SectionRenderer(
             bottomClip = bottom,
         )
     }
-
-    val background = baseStyle.background
 
     fun findPage(char: Int): PageRenderer? {
         val pages = pages
