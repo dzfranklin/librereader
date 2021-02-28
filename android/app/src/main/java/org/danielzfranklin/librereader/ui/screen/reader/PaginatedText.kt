@@ -301,7 +301,7 @@ private class SectionsAnimationState constructor(
     }
 
     companion object {
-        private const val NEARLY_ONE = 0.999f
+        private const val NEARLY_ONE = 0.9999f
     }
 }
 
