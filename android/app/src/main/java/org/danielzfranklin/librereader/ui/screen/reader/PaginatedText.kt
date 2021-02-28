@@ -325,7 +325,8 @@ private class SectionsAnimationState constructor(
                     return remainingDelta
                 }
 
-                _position = PagePosition(newSection, renderer[newSection]!!.lastPage.toFloat() + NEARLY_ONE)
+                _position =
+                    PagePosition(newSection, renderer[newSection]!!.lastPage.toFloat() + NEARLY_ONE)
                 jumpBy(remainingDelta)
             }
 
