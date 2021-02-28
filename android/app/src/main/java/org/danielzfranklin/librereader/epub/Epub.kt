@@ -9,14 +9,15 @@ data class Epub(
     val id: BookID,
     val maxSection: Int,
     private val getSection: (Int) -> EpubSection?,
-    private val sectionLengths: List<Int>
 ) {
     constructor(id: BookID, epub: Book) : this(
         id,
         epub.spine.spineReferences.size - 1,
-        { if (it < epub.spine.spineReferences.size) EpubSection(id, epub, it) else null },
-        TODO()
+        { if (it < epub.spine.spineReferences.size) EpubSection(id, epub, it) else null }
     )
+
+    // TODO: Cache this at import, don't require loading all the sections
+    private val sectionLengths = (0..maxSection).map { getSection(it)!!.text.length }
 
     /** Unit: Characters */
     private val length = sectionLengths.sum()

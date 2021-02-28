@@ -64,14 +64,13 @@ fun PaginatedText(
             makeSection = makeSection
         )
 
-        val position = rememberPositionState(
+        val initialPagePosition = remember {
             PagePosition(
                 initialPosition.section,
                 renderer[initialPosition.section]!!.findPage(initialPosition.charIndex)!!.index.toFloat()
-            ),
-            renderer,
-            onPosition
-        )
+            )
+        }
+        val position = rememberPositionState(initialPagePosition, renderer, onPosition)
 
         Box(
             Modifier
@@ -305,7 +304,7 @@ private class SectionsAnimationState constructor(
         val sectionMax = renderer[position.value.section]!!.lastPage
         val start = position.value.page
 
-        val sectionDelta = delta.coerceIn(-start, sectionMax.toFloat() - start)
+        val sectionDelta = delta.coerceIn(-start, (sectionMax + NEARLY_ONE) - start)
         val remainingDelta = delta - sectionDelta
         _position = _position.copy(page = start + sectionDelta)
 
@@ -410,9 +409,9 @@ private class SectionsAnimationState constructor(
                     return
                 }
 
-                val nextSectionMax = renderer[position.value.section]!!.lastPage
-                _position =
-                    PagePosition(_position.section - 1, nextSectionMax.toFloat() + NEARLY_ONE)
+                val nextSection = _position.section - 1
+                val nextSectionMax = renderer[nextSection]!!.lastPage
+                _position = PagePosition(nextSection, nextSectionMax.toFloat() + NEARLY_ONE)
                 pageAnim.animateTo(
                     nextSectionMax.toFloat(),
                     if (animationHasBegun) tween(durationMillis) else tween(
