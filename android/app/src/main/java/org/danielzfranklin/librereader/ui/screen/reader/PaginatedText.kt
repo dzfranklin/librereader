@@ -4,7 +4,6 @@ import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -21,8 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -131,7 +128,7 @@ fun PaginatedText(
                     }
                 }
         ) {
-            PaginatedSections(position.position.value, renderer)
+            PaginatedSections(position.position, renderer)
         }
     }
 
@@ -180,7 +177,7 @@ private fun PaginatedSectionsPreview() {
         val animPosition = rememberPositionState(PagePosition(0, 0f), renderer, {})
         val animScope = rememberCoroutineScope()
 
-        PaginatedSections(animPosition.position.value, renderer)
+        PaginatedSections(animPosition.position, renderer)
 
         Column(
             Modifier
@@ -322,25 +319,34 @@ private class SectionsAnimationState constructor(
 }
 
 @Composable
-private fun PaginatedSections(position: PagePosition, renderer: Renderer) {
-    val currentSection = renderer[position.section]
-        ?: throw IllegalArgumentException("Position $position does not exist")
-    val nextSection = renderer[position.section + 1]
+private fun PaginatedSections(position: State<PagePosition>, renderer: Renderer) {
+    val currentSection = remember {
+        derivedStateOf {
+            renderer[position.value.section]
+                ?: throw IllegalArgumentException("Position $position does not exist")
+        }
+    }
+    val nextSection = remember { derivedStateOf { renderer[position.value.section + 1] } }
+    val page = remember { derivedStateOf { position.value.page } }
 
     // If last page in the section is partly turned
-    if (nextSection != null && position.page > currentSection.lastPage) {
+    val next = nextSection.value
+    if (next != null && page.value > currentSection.value.lastPage) {
         // ... show the first page of the next section behind it
-        PaginatedSection(nextSection, 0f)
+        PaginatedSection(next, mutableStateOf(0f))
     }
 
-    PaginatedSection(currentSection, position.page)
+    PaginatedSection(currentSection.value, page)
 }
 
 /**
  *  @param position 1.7 means current page is 1, and we're 70% turned to 2
  */
 @Composable
-private fun PaginatedSection(renderer: SectionRenderer, position: Float) {
+private fun PaginatedSection(renderer: SectionRenderer, position: State<Float>) {
+    val index = remember { derivedStateOf { floor(position.value).roundToInt() } }
+    val turnPercent = remember { derivedStateOf { position.value - index.value } }
+
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val pages = renderer.pages
 
@@ -366,34 +372,15 @@ private fun PaginatedSection(renderer: SectionRenderer, position: Float) {
             |222222222|      |111|2222222|
          */
 
-        val index = floor(position).roundToInt()
-
-        val turnPercent = position - index
-
         // If we've turned past the end of the section, the next section is responsible for
         // rendering the next page
-        if (turnPercent != 0f && position < renderer.lastPage) {
-            val page = pages.getOrNull(index + 1)
-            if (page == null) {
-                BlankPage(renderer)
-            } else {
-                Page(page)
-            }
+        val page = pages.getOrNull(index.value + 1)
+        if (page != null) {
+            Page(page)
         }
 
-        val turnState = remember { mutableStateOf(0f) }
-        turnState.value = turnPercent
-        Page(pages[index], turnState)
+        Page(pages[index.value], turnPercent)
     }
-}
-
-@Composable
-private fun BlankPage(renderer: SectionRenderer) {
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(renderer.background)
-    )
 }
 
 @Composable
