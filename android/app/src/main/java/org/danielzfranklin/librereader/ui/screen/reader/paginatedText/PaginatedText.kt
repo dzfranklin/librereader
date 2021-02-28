@@ -70,7 +70,7 @@ fun PaginatedText(
             makeSection = makeSection
         )
 
-        val initialPagePosition = remember {
+        val initialPagePosition = remember(initialPosition) {
             PagePosition(
                 initialPosition.section,
                 renderer[initialPosition.section]!!.findPage(initialPosition.charIndex)!!.index.toFloat()
