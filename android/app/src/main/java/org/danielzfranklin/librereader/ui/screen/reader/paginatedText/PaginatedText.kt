@@ -343,6 +343,8 @@ private fun PaginatedSections(position: State<PagePosition>, renderer: Renderer)
 @Composable
 private fun PaginatedSection(renderer: SectionRenderer, position: State<Float>) {
     val index = remember { derivedStateOf { floor(position.value).roundToInt() } }
+    // TODO: Set to false on turn, and make sure properly handled in selection manager, and make
+    //  sure doesn't increase draw count
     val selectionEnabled = remember { mutableStateOf(true) }
 
     val shadow = ShadowConfig(
