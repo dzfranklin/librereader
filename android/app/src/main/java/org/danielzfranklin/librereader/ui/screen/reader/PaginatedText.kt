@@ -218,7 +218,7 @@ private fun rememberPositionState(
 
 private class SectionsAnimationState constructor(
     initialPosition: PagePosition,
-    val renderer: Renderer,
+    private val renderer: Renderer,
     override val coroutineContext: CoroutineContext,
 ) : CoroutineScope {
     private var pageAnim = AnimationState(initialPosition.page)
