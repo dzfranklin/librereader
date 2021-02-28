@@ -4,10 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.epub.Epub
@@ -38,16 +38,26 @@ class ReaderModel(
     data class Book(
         val id: BookID,
         val epub: Epub,
-        val style: StateFlow<BookStyle>,
+        val style: BookStyle,
         val position: BookPosition
     )
 
-    val book: Deferred<Book> = async {
-        val epub = async { Epub(bookId, repo.getEpub(bookId)!!) }
-        val style = async { repo.getBookStyleFlow(bookId).map { it!! }.stateIn(this@ReaderModel) }
-        val position = repo.getPosition(bookId)!!
-        val book = Book(bookId, epub.await(), style.await(), position)
-        book
+    private val epub = async { repo.getEpub(bookId)?.let { Epub(bookId, it) } }
+    private val style = repo.getBookStyleFlow(bookId)
+    private val position = async { repo.getPosition(bookId) }
+
+    /** Updates when style changes (and not when position changes)
+     * When style changes it will be combined with the latest position
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val book: Flow<Book?> = style.mapLatest { style ->
+        val epub = epub.await()
+        val position = position.await()
+        if (epub != null && style != null && position != null) {
+            Book(bookId, epub, style, position)
+        } else {
+            null
+        }
     }
 
     fun updatePosition(position: BookPosition) {
