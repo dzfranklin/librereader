@@ -1,6 +1,9 @@
 package org.danielzfranklin.librereader.ui.screen.reader
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -31,13 +34,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.R
-import kotlin.coroutines.CoroutineContext
-import kotlin.math.abs
 import kotlin.math.floor
+import kotlin.math.round
 import kotlin.math.roundToInt
 
 @Immutable
@@ -84,10 +85,10 @@ fun PaginatedText(
                                 if (!inDrag && !position.isAnimating.value) {
                                     when {
                                         offset.x < constraints.minWidth * 0.3f ->
-                                            position.animateBy(-1)
+                                            launch { position.animateBy(-1f) }
 
                                         offset.x > constraints.minWidth * 0.7f ->
-                                            position.animateBy(1)
+                                            launch { position.animateBy(1f) }
                                     }
                                 }
                             })
@@ -165,6 +166,7 @@ private fun PaginatedSectionsPreview() {
         )
 
         val animPosition = rememberPositionState(PagePosition(0, 0f), renderer, {})
+        val animScope = rememberCoroutineScope()
 
         PaginatedSections(animPosition.position.value, renderer)
 
@@ -190,7 +192,7 @@ private fun PaginatedSectionsPreview() {
                 horizontalArrangement = Arrangement.Center
             ) {
                 Button(
-                    { animPosition.animateBy(-2, 1000) },
+                    { animScope.launch { animPosition.animateBy(-2f) } },
                     Modifier.padding(horizontal = 5.dp),
                     enabled = !animPosition.isAnimating.value
                 ) {
@@ -198,7 +200,7 @@ private fun PaginatedSectionsPreview() {
                 }
 
                 Button(
-                    { animPosition.animateBy(2, 1000) },
+                    { animScope.launch { animPosition.animateBy(2f) } },
                     Modifier.padding(horizontal = 5.dp),
                     enabled = !animPosition.isAnimating.value
                 ) {
@@ -215,14 +217,8 @@ private fun rememberPositionState(
     renderer: Renderer,
     onPosition: (PaginatedTextPosition) -> Unit
 ): SectionsAnimationState {
-    val scope = rememberCoroutineScope()
     return remember(initialPosition, renderer, onPosition) {
-        SectionsAnimationState(
-            initialPosition,
-            renderer,
-            onPosition,
-            scope.coroutineContext
-        )
+        SectionsAnimationState(initialPosition, renderer, onPosition)
     }
 }
 
@@ -230,17 +226,13 @@ private class SectionsAnimationState constructor(
     initialPosition: PagePosition,
     private val renderer: Renderer,
     private val onPosition: (PaginatedTextPosition) -> Unit,
-    override val coroutineContext: CoroutineContext,
-) : CoroutineScope {
-    private var pageAnim = AnimationState(initialPosition.page)
-
+) {
     private val _positionBacking = mutableStateOf(initialPosition)
     private var lastPageReportedToOnPosition = initialPosition.page.roundToInt()
     private var _position
         get() = _positionBacking.value
         set(value) {
             _positionBacking.value = value
-            pageAnim = pageAnim.copy(value = position.value.page)
 
             val page = floor(value.page).toInt()
             if (page != lastPageReportedToOnPosition) {
@@ -253,51 +245,6 @@ private class SectionsAnimationState constructor(
 
     private val _isAnimating = mutableStateOf(false)
     val isAnimating: State<Boolean> = _isAnimating
-
-    suspend fun animateToNearest() {
-        _isAnimating.value = true
-
-        val nearest = _position.page.roundToInt()
-        val sectionMax = renderer[_position.section]!!.lastPage
-        val spec = spring<Float>(stiffness = Spring.StiffnessLow)
-        when {
-            nearest > sectionMax -> {
-                pageAnim.animateTo(
-                    sectionMax + NEARLY_ONE,
-                    spec,
-                    sequentialAnimation = false,
-                    createOnAnim()
-                )
-                val newSection = _position.section + 1
-                if (newSection > renderer.maxSection) return
-                _position = PagePosition(newSection, 0f)
-            }
-
-            nearest < 0 -> {
-                val newSection = _position.section - 1
-                val newPage = renderer[newSection]!!.lastPage.toFloat()
-                _position = PagePosition(newSection, newPage + NEARLY_ONE)
-                pageAnim.animateTo(
-                    newPage,
-                    spec,
-                    sequentialAnimation = false,
-                    createOnAnim()
-                )
-                if (newSection < 0) return
-            }
-
-            else -> {
-                pageAnim.animateTo(
-                    nearest.toFloat(),
-                    spec,
-                    sequentialAnimation = false,
-                    createOnAnim()
-                )
-            }
-        }
-
-        _isAnimating.value = false
-    }
 
     /** Returns unused delta */
     fun jumpBy(delta: Float): Float {
@@ -333,115 +280,24 @@ private class SectionsAnimationState constructor(
         }
     }
 
-    fun animateBy(delta: Int, durationMillis: Int = 600, sequentialAnimation: Boolean = false) {
-        launch {
-            animateBySuspended(delta, durationMillis, sequentialAnimation)
-        }
-    }
-
-    private suspend fun animateBySuspended(
-        delta: Int,
-        durationMillis: Int,
-        sequential: Boolean = false
+    suspend fun animateBy(
+        delta: Float,
+        spec: AnimationSpec<Float> = spring(stiffness = 100f)
     ) {
-        // NOTE: We take a duration instead of an AnimationSpec because we need to break the
-        // animation into section-sized chunks and that makes it much simpler.
-
-        // TODO: Instead of splitting duration, cancel animations and continue them to new targets
-        //  so that we can use spring spec
-
         _isAnimating.value = true
 
-        val sectionMax = renderer[position.value.section]!!.lastPage
-        val start = position.value.page.roundToInt()
-
-        val sectionDelta = delta.coerceIn(-start, sectionMax - start)
-        val remainingDelta = delta - sectionDelta
-
-        var animationHasBegun = sequential
-        if (sectionDelta != 0) {
-            // TODO: sequentialAnimation appears not to work correctly here when we animate forwards
-            // by two, and this is called on the recursive call
-            pageAnim.animateTo(
-                (start + sectionDelta).toFloat(),
-                if (sequential) tween(durationMillis) else tween(
-                    (durationMillis * abs(sectionDelta).toFloat() / abs(
-                        delta
-                    ).toFloat()).roundToInt()
-                ),
-                sequential,
-                createOnAnim()
-            )
-            animationHasBegun = true
+        var prev = 0f
+        animate(0f, delta, animationSpec = spec) { value, _ ->
+            jumpBy(value - prev)
+            prev = value
         }
 
-        when {
-            remainingDelta > 0 -> {
-                if (position.value.section == renderer.maxSection) {
-                    _isAnimating.value = false
-                    return
-                }
-
-                pageAnim.animateTo(
-                    sectionMax + NEARLY_ONE,
-                    if (animationHasBegun) tween(durationMillis) else tween(
-                        (durationMillis * NEARLY_ONE / abs(
-                            delta
-                        ).toFloat()).roundToInt()
-                    ),
-                    animationHasBegun,
-                    createOnAnim()
-                )
-                animationHasBegun = true
-
-                _position = PagePosition(_position.section + 1, 0f)
-                val nextDelta = remainingDelta - 1
-                animateBySuspended(
-                    nextDelta,
-                    durationMillis,
-                    animationHasBegun
-                )
-            }
-
-            remainingDelta < 0 -> {
-                if (position.value.section == 0) {
-                    _isAnimating.value = false
-                    return
-                }
-
-                val nextSection = _position.section - 1
-                val nextSectionMax = renderer[nextSection]!!.lastPage
-                _position = PagePosition(nextSection, nextSectionMax.toFloat() + NEARLY_ONE)
-                pageAnim.animateTo(
-                    nextSectionMax.toFloat(),
-                    if (animationHasBegun) tween(durationMillis) else tween(
-                        (durationMillis * NEARLY_ONE / abs(
-                            delta
-                        ).toFloat()).roundToInt()
-                    ),
-                    animationHasBegun,
-                    createOnAnim()
-                )
-                animationHasBegun = true
-
-                val nextDelta = remainingDelta + 1
-                animateBySuspended(
-                    nextDelta,
-                    durationMillis,
-                    animationHasBegun
-                )
-            }
-
-            else -> {
-                _isAnimating.value = false
-            }
-        }
+        _isAnimating.value = false
     }
 
-    private fun createOnAnim(): AnimationScope<Float, AnimationVector1D>.() -> Unit {
-        return {
-            _position = _position.copy(page = value)
-        }
+    suspend fun animateToNearest() {
+        val delta = round(_position.page) - _position.page
+        animateBy(delta, spring(stiffness = Spring.StiffnessLow))
     }
 
     companion object {
