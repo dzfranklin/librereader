@@ -42,7 +42,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.R
-import org.danielzfranklin.librereader.ui.screen.reader.paginatedText.selectablePage
+import org.danielzfranklin.librereader.ui.screen.reader.paginatedText.selectablePageText
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.round
@@ -389,7 +389,7 @@ private fun Page(page: PageRenderer, selectionEnabled: State<Boolean>) {
             .fillMaxSize()
             .background(page.background)
             .page(page)
-            .selectablePage(page, selectionEnabled)
+            .selectablePageText(page, selectionEnabled)
     )
 }
 

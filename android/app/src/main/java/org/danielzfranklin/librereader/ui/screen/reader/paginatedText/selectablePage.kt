@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.ui.screen.reader.PageRenderer
 import kotlin.math.max
 
-internal fun Modifier.selectablePage(page: PageRenderer, enabled: State<Boolean>) =
+internal fun Modifier.selectablePageText(page: PageRenderer, enabled: State<Boolean>) =
     if (!enabled.value) this else graphicsLayer().composed {
         // Based on Compose MultiWidgetSelectionDelegate, with many features we don't need stripped out
 
