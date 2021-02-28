@@ -46,6 +46,7 @@ data class PaginatedTextPosition(val section: Int, val charIndex: Int)
 @Composable
 fun PaginatedText(
     initialPosition: PaginatedTextPosition,
+    onPosition: (PaginatedTextPosition) -> Unit,
     makeSection: (Int) -> AnnotatedString,
     maxSection: Int,
     baseStyle: TextStyle,
@@ -67,7 +68,9 @@ fun PaginatedText(
             PagePosition(
                 initialPosition.section,
                 renderer[initialPosition.section]!!.findPage(initialPosition.charIndex)!!.index.toFloat()
-            ), renderer
+            ),
+            renderer,
+            onPosition
         )
 
         Box(
@@ -117,7 +120,6 @@ fun PaginatedText(
                 }
         ) {
             PaginatedSections(position.position.value, renderer)
-            Text(position.position.value.toString())
         }
     }
 
@@ -128,12 +130,19 @@ fun PaginatedText(
 private fun PaginatedTextPreview() {
     val text = rememberAnnotatedStringPreview()
 
-    PaginatedText(
-        PaginatedTextPosition(0, 0),
-        { text },
-        2,
-        TextStyle(fontSize = 22.sp)
-    )
+    val initialPosition = PaginatedTextPosition(0, 0)
+    val position = remember { mutableStateOf(initialPosition) }
+
+    Box {
+        PaginatedText(
+            initialPosition,
+            { position.value = it },
+            { text },
+            2,
+            TextStyle(fontSize = 22.sp)
+        )
+        Text(position.value.toString())
+    }
 }
 
 @Immutable
@@ -156,7 +165,7 @@ private fun PaginatedSectionsPreview() {
             makeSection = { text }
         )
 
-        val animPosition = rememberPositionState(PagePosition(0, 0f), renderer)
+        val animPosition = rememberPositionState(PagePosition(0, 0f), renderer, {})
 
         PaginatedSections(animPosition.position.value, renderer)
 
@@ -204,13 +213,15 @@ private fun PaginatedSectionsPreview() {
 @Composable
 private fun rememberPositionState(
     initialPosition: PagePosition,
-    renderer: Renderer
+    renderer: Renderer,
+    onPosition: (PaginatedTextPosition) -> Unit
 ): SectionsAnimationState {
     val scope = rememberCoroutineScope()
-    return remember(initialPosition, renderer) {
+    return remember(initialPosition, renderer, onPosition) {
         SectionsAnimationState(
             initialPosition,
             renderer,
+            onPosition,
             scope.coroutineContext
         )
     }
@@ -219,16 +230,25 @@ private fun rememberPositionState(
 private class SectionsAnimationState constructor(
     initialPosition: PagePosition,
     private val renderer: Renderer,
+    private val onPosition: (PaginatedTextPosition) -> Unit,
     override val coroutineContext: CoroutineContext,
 ) : CoroutineScope {
     private var pageAnim = AnimationState(initialPosition.page)
 
     private val _positionBacking = mutableStateOf(initialPosition)
+    private var lastPageReportedToOnPosition = initialPosition.page.roundToInt()
     private var _position
         get() = _positionBacking.value
         set(value) {
             _positionBacking.value = value
             pageAnim = pageAnim.copy(value = position.value.page)
+
+            val page = floor(value.page).toInt()
+            if (page != lastPageReportedToOnPosition) {
+                val char = renderer[value.section]!!.pages[page].startChar
+                onPosition(PaginatedTextPosition(value.section, char))
+                lastPageReportedToOnPosition = page
+            }
         }
     val position: State<PagePosition> = _positionBacking
 
