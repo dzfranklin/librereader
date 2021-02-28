@@ -39,11 +39,16 @@ fun ReaderScreen(bookId: BookID) {
             CircularProgressIndicator(Modifier.fillMaxWidth(0.5f).aspectRatio(1f))
         }
     } else {
-        val initialPosition = remember { current.position.value }
+        val initialPosition = remember {
+            PaginatedTextPosition(
+                current.position.sectionIndex,
+                current.position.charIndex
+            )
+        }
         val epub = current.epub
 
         PaginatedText(
-            initialPosition = PaginatedTextPosition(initialPosition.sectionIndex, initialPosition.charIndex),
+            initialPosition = initialPosition,
             onPosition = { model.updatePosition(BookPosition(epub, it.section, it.charIndex)) },
             makeSection = { epub.section(it)!!.text },
             maxSection = epub.maxSection,
