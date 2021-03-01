@@ -48,13 +48,13 @@ internal fun Modifier.selectablePageText(
 
             when {
                 inSelection && manager.insideHandle(position, true) -> {
-                    awaitHandleDrag(manager, down, true)
+                    awaitHandleDragOrCancel(manager, down, true)
                 }
                 inSelection && manager.insideHandle(position, false) -> {
-                    awaitHandleDrag(manager, down, false)
+                    awaitHandleDragOrCancel(manager, down, false)
                 }
                 !inSelection -> {
-                    awaitWordBasedDrag(manager, down)
+                    awaitWordBasedDragOrCancel(manager, down)
                 }
                 manager.insideSelection(position) -> {
                     down.consumeAllChanges()
@@ -79,11 +79,13 @@ internal fun Modifier.selectablePageText(
     }
 }
 
-private suspend fun PointerInputScope.awaitHandleDrag(
+private suspend fun PointerInputScope.awaitHandleDragOrCancel(
     manager: PageTextSelectionManager,
     down: PointerInputChange,
     draggingStartHandle: Boolean
 ) {
+    down.consumeAllChanges()
+
     manager.hideSelectionToolbar()
 
     awaitPointerEventScope {
@@ -111,10 +113,12 @@ private suspend fun PointerInputScope.awaitHandleDrag(
     manager.showSelectionToolbar()
 }
 
-private suspend fun PointerInputScope.awaitWordBasedDrag(
+private suspend fun PointerInputScope.awaitWordBasedDragOrCancel(
     manager: PageTextSelectionManager,
     down: PointerInputChange
 ) {
+    down.consumeAllChanges()
+
     manager.hideSelectionToolbar()
     manager.update(
         startPosition = down.position,
