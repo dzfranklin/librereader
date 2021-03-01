@@ -34,7 +34,7 @@ internal fun Modifier.selectablePageText(
     page: PageRenderer,
     enabled: State<Boolean>,
     manager: PageTextSelectionManager,
-) = if (!enabled.value) this else graphicsLayer().composed {
+) = if (!enabled.value) this then deselect(manager) else graphicsLayer().composed {
     // Based on Compose MultiWidgetSelectionDelegate, with many features we don't need stripped out
 
     val colors = LocalTextSelectionColors.current
@@ -76,6 +76,11 @@ internal fun Modifier.selectablePageText(
         val endHandle = manager.computeHandlePath(selection, false)
         drawPath(endHandle, colors.handleColor)
     }
+}
+
+private fun Modifier.deselect(manager: PageTextSelectionManager): Modifier {
+    manager.deselect()
+    return this
 }
 
 private suspend fun PointerInputScope.awaitHandleDragOrCancel(
