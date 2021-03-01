@@ -123,17 +123,17 @@ private suspend fun PointerInputScope.awaitWordBasedDragOrCancel(
 ) {
     down.consumeAllChanges()
 
+    if (awaitLongPressOrCancellation(down) == null) {
+        manager.showSelectionToolbar()
+        return
+    }
+
     manager.hideSelectionToolbar()
     manager.update(
         startPosition = down.position,
         endPosition = down.position,
         wordBased = true,
     )
-
-    if (awaitLongPressOrCancellation(down) == null) {
-        manager.showSelectionToolbar()
-        return
-    }
 
     awaitPointerEventScope {
         while (true) {
