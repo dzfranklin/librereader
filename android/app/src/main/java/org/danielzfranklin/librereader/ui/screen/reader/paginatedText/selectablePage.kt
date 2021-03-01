@@ -27,7 +27,6 @@ import kotlinx.coroutines.*
 import kotlinx.parcelize.Parcelize
 import org.danielzfranklin.librereader.ui.screen.reader.PageRenderer
 import org.danielzfranklin.librereader.util.contains
-import timber.log.Timber
 import kotlin.coroutines.CoroutineContext
 import kotlin.math.max
 
