@@ -149,7 +149,7 @@ private suspend fun PointerInputScope.awaitChangedToUp(id: PointerId) {
         do {
             val event = awaitPointerEvent().changes.fastFirstOrNull { it.id == id }
             event?.consumeAllChanges()
-        } while (event?.changedToUp() != true)
+        } while (event != null && !event.changedToUpIgnoreConsumed())
     }
 }
 
