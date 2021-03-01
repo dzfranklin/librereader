@@ -65,6 +65,17 @@ data class PageRenderer(
         return path
     }
 
+    /** Returns the bounding box (in page space) as Rect of the character for given character offset
+     * (in page space). Rect includes the top, bottom, left and right of a character.
+     */
+    fun getBoundingBox(offset: Int): Rect {
+        val globalRect = sectionRenderer.measures.getBoundingBox(startChar + offset)
+        return globalRect.translate(Offset(padding, -topClip + padding))
+    }
+
+    fun getText(firstChar: Int, lastChar: Int) =
+        sectionRenderer.annotatedString.subSequence(firstChar, lastChar)
+
     private val padding = sectionRenderer.paddingPx
 }
 
@@ -73,7 +84,7 @@ class SectionRenderer(
     val outerWidth: Dp,
     val outerHeight: Dp,
     private val padding: Dp,
-    annotatedString: AnnotatedString,
+    internal val annotatedString: AnnotatedString,
     baseStyle: TextStyle,
     density: Density,
     fontLoader: Font.ResourceLoader

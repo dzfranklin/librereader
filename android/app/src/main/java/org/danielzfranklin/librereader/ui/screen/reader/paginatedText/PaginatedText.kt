@@ -6,10 +6,8 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -17,7 +15,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -28,23 +25,24 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFontLoader
+import androidx.compose.ui.platform.LocalTextToolbar
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.*
-import androidx.compose.ui.text.style.ResolvedTextDirection
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.R
+import org.danielzfranklin.librereader.ui.screen.reader.paginatedText.PageTextSelectionManager
 import org.danielzfranklin.librereader.ui.screen.reader.paginatedText.selectablePageText
 import kotlin.math.floor
-import kotlin.math.max
 import kotlin.math.round
 import kotlin.math.roundToInt
 
@@ -386,13 +384,29 @@ private fun PaginatedSection(renderer: SectionRenderer, position: State<Float>) 
 
 @Composable
 private fun Page(page: PageRenderer, selectionEnabled: State<Boolean>) {
+    val selectionManager = rememberSelectionManager(page)
+
     Box(
         Modifier
             .fillMaxSize()
             .background(page.background)
             .page(page)
-            .selectablePageText(page, selectionEnabled)
+            .selectablePageText(page, selectionEnabled, selectionManager)
     )
+}
+
+@Composable
+private fun rememberSelectionManager(page: PageRenderer): PageTextSelectionManager {
+    val textToolbar = LocalTextToolbar.current
+    val clipboardManager = LocalClipboardManager.current
+    val density = LocalDensity.current
+    val context = rememberCoroutineScope().coroutineContext
+    return rememberSaveable(
+        context,
+        page,
+        textToolbar,
+        saver = PageTextSelectionManager.saver(context, page, textToolbar, clipboardManager, density)
+    ) { PageTextSelectionManager(context, page, textToolbar, clipboardManager, density) }
 }
 
 private var drawsDebug = 0

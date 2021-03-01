@@ -1,146 +1,442 @@
 package org.danielzfranklin.librereader.ui.screen.reader.paginatedText
 
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.text.selection.LocalTextSelectionColors
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import android.os.Parcelable
+import androidx.compose.foundation.gestures.*
+import androidx.compose.foundation.text.selection.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.consumeAllChanges
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.layout.*
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.platform.TextToolbar
+import androidx.compose.ui.platform.TextToolbarStatus
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.ResolvedTextDirection
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import androidx.compose.ui.unit.*
+import androidx.compose.ui.util.fastAll
+import androidx.compose.ui.util.fastAny
+import androidx.compose.ui.util.fastFirstOrNull
+import kotlinx.coroutines.*
+import kotlinx.parcelize.Parcelize
 import org.danielzfranklin.librereader.ui.screen.reader.PageRenderer
+import org.danielzfranklin.librereader.util.contains
+import timber.log.Timber
+import kotlin.coroutines.CoroutineContext
 import kotlin.math.max
 
-internal fun Modifier.selectablePageText(page: PageRenderer, enabled: State<Boolean>) =
-    if (!enabled.value) this else graphicsLayer().composed {
-        // Based on Compose MultiWidgetSelectionDelegate, with many features we don't need stripped out
+internal fun Modifier.selectablePageText(
+    page: PageRenderer,
+    enabled: State<Boolean>,
+    manager: PageTextSelectionManager,
+) = if (!enabled.value) this else graphicsLayer().composed {
+    // Based on Compose MultiWidgetSelectionDelegate, with many features we don't need stripped out
 
-        val selection = rememberSaveable(page) { mutableStateOf<Selection?>(null) }
-        val colors = LocalTextSelectionColors.current
+    val colors = LocalTextSelectionColors.current
 
-        pointerInput(page) {
-            var dragBegin: Offset? = null
+    pointerInput(page) {
+        while (true) {
+            val down = awaitPointerEventScope { awaitFirstDown(requireUnconsumed = false) }
+            val position = down.position.round()
+            val inSelection = manager.selection.value != null
 
-            coroutineScope {
-                var tapDetector: Job? = null
-
-                launch {
-                    detectDragGesturesAfterLongPress(
-                        onDragStart = { offset ->
-                            selection.value = getSelectionInfo(
-                                page = page,
-                                startPosition = offset,
-                                endPosition = offset,
-                                previous = null,
-                            )
-
-                            dragBegin = offset
-
-                            tapDetector = launch {
-                                detectTapGestures {
-                                    selection.value = null
-                                    dragBegin = null
-                                    tapDetector = null
-                                    cancel("Cancel on tap")
-                                }
-                            }
-                        },
-                        onDrag = { change, _ ->
-                            selection.value = getSelectionInfo(
-                                page = page,
-                                startPosition = dragBegin!!,
-                                endPosition = change.position,
-                                previous = selection.value!!
-                            )
-                            change.consumeAllChanges()
-                        })
+            when {
+                inSelection && manager.insideHandle(position, true) -> {
+                    awaitHandleDrag(manager, down, true)
+                }
+                inSelection && manager.insideHandle(position, false) -> {
+                    awaitHandleDrag(manager, down, false)
+                }
+                !inSelection -> {
+                    awaitWordBasedDrag(manager, down)
+                }
+                manager.insideSelection(position) -> {
+                    down.consumeAllChanges()
+                    awaitChangedToUp(down.id)
+                }
+                else -> {
+                    manager.deselect()
                 }
             }
+        }
+    } then graphicsLayer().drawBehind {
+        val selection = manager.selection.value ?: return@drawBehind
 
-            // TODO: Handles
-        } then graphicsLayer().drawBehind {
-            val range = selection.value?.toTextRange() ?: return@drawBehind
-            if (range.min == range.max) return@drawBehind
+        val highlight = manager.computeHighlightPath(selection)
+        drawPath(highlight, colors.backgroundColor)
 
-            val path = page.getPathForRange(range.min, range.max)
-            drawPath(path, colors.backgroundColor)
+        val startHandle = manager.computeHandlePath(selection, true)
+        drawPath(startHandle, colors.handleColor)
+
+        val endHandle = manager.computeHandlePath(selection, false)
+        drawPath(endHandle, colors.handleColor)
+    }
+}
+
+private suspend fun PointerInputScope.awaitHandleDrag(
+    manager: PageTextSelectionManager,
+    down: PointerInputChange,
+    draggingStartHandle: Boolean
+) {
+    manager.hideSelectionToolbar()
+
+    awaitPointerEventScope {
+        while (true) {
+            val event = awaitPointerEvent()
+            if (event.isPointerUp(down.id)) break
+            val drag = event.changes.fastFirstOrNull { it.id == down.id } ?: break
+
+            manager.selection.value ?: break
+            if (draggingStartHandle) {
+                manager.update(
+                    startPosition = drag.position,
+                    isStartHandleDragged = true
+                )
+            } else {
+                manager.update(
+                    endPosition = drag.position,
+                )
+            }
+
+            drag.consumeAllChanges()
         }
     }
 
-private fun getSelectionInfo(
-    page: PageRenderer,
-    startPosition: Offset,
-    endPosition: Offset,
-    previous: Selection?,
-    wordBased: Boolean = true,
-    isStartHandleDragged: Boolean = false,
-): Selection? {
-    // Based on Compose MultiWidgetSelectionDelegate getSelectionInfo, processAsSingleComposable,
-    // and getRefinedSelectionInfo, with many features we don't need stripped out
-
-    var startOffset = page.getOffsetForPosition(startPosition)
-    var endOffset = page.getOffsetForPosition(endPosition)
-
-    if (startOffset == endOffset) {
-        // If the start and end offset are at the same character, and it's not the initial
-        // selection, then bound to at least one character.
-        val textRange = ensureAtLeastOneChar(
-            offset = startOffset,
-            lastOffset = page.lastOffset,
-            previousSelection = previous?.toTextRange(),
-            isStartHandle = isStartHandleDragged,
-            handlesCrossed = previous?.handlesCrossed ?: false
-        )
-        startOffset = textRange.start
-        endOffset = textRange.end
-    }
-
-    // nothing is selected
-    if (startOffset == -1 && endOffset == -1) return null
-
-    // Check if the start and end handles are crossed each other.
-    val handlesCrossed = startOffset > endOffset
-
-    // If under long press, update the selection to word-based.
-    if (wordBased) {
-        val startWordBoundary = page.getWordBoundary(startOffset.coerceIn(0, page.lastOffset))
-        val endWordBoundary = page.getWordBoundary(endOffset.coerceIn(0, page.lastOffset))
-
-        // If handles are not crossed, start should be snapped to the start of the word containing the
-        // start offset, and end should be snapped to the end of the word containing the end offset.
-        // If handles are crossed, start should be snapped to the end of the word containing the start
-        // offset, and end should be snapped to the start of the word containing the end offset.
-        startOffset = if (handlesCrossed) startWordBoundary.end else startWordBoundary.start
-        endOffset = if (handlesCrossed) endWordBoundary.start else endWordBoundary.end
-    }
-
-
-    return Selection(
-        start = Selection.AnchorInfo(
-            direction = page.getBidiRunDirection(startOffset),
-            offset = startOffset,
-        ),
-        end = Selection.AnchorInfo(
-            direction = page.getBidiRunDirection(max(endOffset - 1, 0)),
-            offset = endOffset,
-        ),
-        handlesCrossed = handlesCrossed
-    )
+    manager.showSelectionToolbar()
 }
 
+private suspend fun PointerInputScope.awaitWordBasedDrag(
+    manager: PageTextSelectionManager,
+    down: PointerInputChange
+) {
+    manager.hideSelectionToolbar()
+    manager.update(
+        startPosition = down.position,
+        endPosition = down.position,
+        wordBased = true,
+    )
+
+    if (awaitLongPressOrCancellation(down) == null) {
+        manager.showSelectionToolbar()
+        return
+    }
+
+    awaitPointerEventScope {
+        while (true) {
+            val event = awaitPointerEvent()
+            if (event.isPointerUp(down.id)) break
+            val drag = event.changes.fastFirstOrNull { it.id == down.id } ?: break
+
+            manager.update(
+                endPosition = drag.position,
+                wordBased = true,
+            )
+            drag.consumeAllChanges()
+        }
+    }
+
+    manager.showSelectionToolbar()
+}
+
+private suspend fun PointerInputScope.awaitChangedToUp(id: PointerId) {
+    awaitPointerEventScope {
+        do {
+            val event = awaitPointerEvent().changes.fastFirstOrNull { it.id == id }
+            event?.consumeAllChanges()
+        } while (event?.changedToUp() != true)
+    }
+}
+
+
+internal class PageTextSelectionManager(
+    override val coroutineContext: CoroutineContext,
+    private val page: PageRenderer,
+    private val textToolbar: TextToolbar,
+    private val clipboardManager: ClipboardManager,
+    private val density: Density,
+    initialSelection: Selection? = null
+) : CoroutineScope {
+    // Loosely based off of SelectionManager (See usage in SelectionContainer)
+
+    private val _selection = mutableStateOf(initialSelection)
+    val selection: State<Selection?> = _selection
+
+    internal fun insideSelection(offset: IntOffset): Boolean {
+        val selection = _selection.value ?: return false
+        return computeHighlightPath(selection).contains(offset)
+    }
+
+    internal fun insideHandle(offset: IntOffset, isStartHandle: Boolean): Boolean {
+        val selection = _selection.value ?: return false
+        return computeHandlePath(selection, isStartHandle).contains(offset)
+    }
+
+    internal fun handlePosition(selection: Selection, isStartHandle: Boolean): Offset {
+        val absolute = if (!selection.handlesCrossed) isStartHandle else !isStartHandle
+        return if (absolute) {
+            page.getBoundingBox(selection.start.offset).bottomLeft
+        } else {
+            page.getBoundingBox(selection.end.offset).bottomLeft
+        }
+    }
+
+    // TODO cache result
+    internal fun computeHighlightPath(selection: Selection): Path {
+        val range = selection.toTextRange()
+
+        if (range.min == range.max) return Path()
+
+        return page.getPathForRange(range.min, range.max)
+    }
+
+    // TODO: Cache results
+    internal fun computeHandlePath(selection: Selection, isStartHandle: Boolean): Path {
+        val directions = selection.start.direction to selection.end.direction
+        val isLeft = isLeft(isStartHandle, directions, selection.handlesCrossed)
+
+        val position = handlePosition(selection, isStartHandle)
+
+        // Path dimensions copied from Compose
+
+        return Path().apply {
+            with(density) {
+                addRect(
+                    Rect(
+                        top = 0f,
+                        bottom = 0.5f * HANDLE_HEIGHT.toPx(),
+                        left = if (isLeft) 0.5f * HANDLE_WIDTH.toPx() else 0f,
+                        right = if (isLeft) HANDLE_WIDTH.toPx() else 0.5f * HANDLE_WIDTH.toPx()
+                    )
+                )
+
+                addOval(
+                    Rect(
+                        top = 0f,
+                        bottom = HANDLE_HEIGHT.toPx(),
+                        left = 0f,
+                        right = HANDLE_WIDTH.toPx()
+                    )
+                )
+
+                translate(position)
+                if (isLeft) {
+                    translate(Offset(-HANDLE_WIDTH.toPx(), 0f))
+                }
+            }
+        }
+    }
+
+    private fun getSelectionInfo(
+        startPosition: Offset,
+        endPosition: Offset,
+        previous: Selection?,
+        wordBased: Boolean = false,
+        isStartHandleDragged: Boolean = false,
+    ): Selection? {
+        // Based on Compose MultiWidgetSelectionDelegate getSelectionInfo, processAsSingleComposable,
+        // and getRefinedSelectionInfo, with many features we don't need stripped out
+
+        var startOffset = page.getOffsetForPosition(startPosition)
+        var endOffset = page.getOffsetForPosition(endPosition)
+
+        if (startOffset == endOffset) {
+            // If the start and end offset are at the same character, and it's not the initial
+            // selection, then bound to at least one character.
+            val textRange = ensureAtLeastOneChar(
+                offset = startOffset,
+                lastOffset = page.lastOffset,
+                previousSelection = previous?.toTextRange(),
+                isStartHandle = isStartHandleDragged,
+                handlesCrossed = previous?.handlesCrossed ?: false
+            )
+            startOffset = textRange.start
+            endOffset = textRange.end
+        }
+
+        // nothing is selected
+        if (startOffset == -1 && endOffset == -1) return null
+
+        // Check if the start and end handles are crossed each other.
+        val handlesCrossed = startOffset > endOffset
+
+        // If under long press, update the selection to word-based.
+        if (wordBased) {
+            val startWordBoundary = page.getWordBoundary(startOffset.coerceIn(0, page.lastOffset))
+            val endWordBoundary = page.getWordBoundary(endOffset.coerceIn(0, page.lastOffset))
+
+            // If handles are not crossed, start should be snapped to the start of the word containing the
+            // start offset, and end should be snapped to the end of the word containing the end offset.
+            // If handles are crossed, start should be snapped to the end of the word containing the start
+            // offset, and end should be snapped to the start of the word containing the end offset.
+            startOffset = if (handlesCrossed) startWordBoundary.end else startWordBoundary.start
+            endOffset = if (handlesCrossed) endWordBoundary.start else endWordBoundary.end
+        }
+
+
+        return Selection(
+            start = Selection.AnchorInfo(
+                direction = page.getBidiRunDirection(startOffset),
+                offset = startOffset,
+            ),
+            end = Selection.AnchorInfo(
+                direction = page.getBidiRunDirection(max(endOffset - 1, 0)),
+                offset = endOffset,
+            ),
+            handlesCrossed = handlesCrossed
+        )
+    }
+
+    fun deselect() {
+        _selection.value = null
+        hideSelectionToolbar()
+    }
+
+    var lastStartPosition: Offset? = null
+    var lastEndPosition: Offset? = null
+
+    internal fun update(
+        startPosition: Offset? = null,
+        endPosition: Offset? = null,
+        wordBased: Boolean = false,
+        isStartHandleDragged: Boolean = false
+    ) {
+        val actualStart = startPosition ?: lastStartPosition!!
+        val actualEnd = endPosition ?: lastEndPosition!!
+
+        _selection.value = getSelectionInfo(
+            startPosition = actualStart,
+            endPosition = actualEnd,
+            previous = _selection.value,
+            wordBased = wordBased,
+            isStartHandleDragged = isStartHandleDragged
+        )
+
+        lastStartPosition = actualStart
+        lastEndPosition = actualEnd
+    }
+
+    internal fun showSelectionToolbar() {
+        val selection = _selection.value ?: return
+        textToolbar.showMenu(
+            selectionRect(selection),
+            onCopyRequested = {
+                copySelectionToClipboard()
+                hideSelectionToolbar()
+            }
+        )
+    }
+
+    internal fun hideSelectionToolbar() {
+        if (textToolbar.status == TextToolbarStatus.Shown) {
+            textToolbar.hide()
+        }
+    }
+
+    private fun copySelectionToClipboard() {
+        val selection = _selection.value ?: return
+        val first = if (!selection.handlesCrossed) selection.start else selection.end
+        val end = if (!selection.handlesCrossed) selection.end else selection.start
+        val text = page.getText(first.offset, end.offset + 1)
+        clipboardManager.setText(text)
+
+        deselect()
+    }
+
+    /**
+     * Copied from compose
+     *
+     * Calculate selected region as Rect. The top is the top of the first selected line, and the
+     * bottom is the bottom of the last selected line. The left is the leftmost handle's horizontal
+     * coordinates, and the right is the rightmost handle's coordinates. */
+    private fun selectionRect(selection: Selection): Rect {
+        val start = page.getBoundingBox(selection.start.offset)
+        val end = page.getBoundingBox(selection.end.offset)
+
+        val leftmost = if (start.left < end.left) start else end
+        val rightmost = if (start.right > end.right) start else end
+
+        val top = if (!selection.handlesCrossed) start.top else end.top
+        val bottom = if (!selection.handlesCrossed) end.bottom else start.bottom
+
+        return Rect(
+            top = top,
+            bottom = bottom,
+            left = leftmost.left,
+            right = rightmost.right
+        )
+    }
+
+    /**
+     * Copied from Compose
+     *
+     * Computes whether the handle's appearance should be left-pointing or right-pointing.
+     */
+    private fun isLeft(
+        isStartHandle: Boolean,
+        directions: Pair<ResolvedTextDirection, ResolvedTextDirection>,
+        handlesCrossed: Boolean
+    ): Boolean {
+        return if (isStartHandle) {
+            isHandleLtrDirection(directions.first, handlesCrossed)
+        } else {
+            !isHandleLtrDirection(directions.second, handlesCrossed)
+        }
+    }
+
+    /**
+     * Copied from compose
+     *
+     * This method is to check if the selection handles should use the natural Ltr pointing
+     * direction.
+     * If the context is Ltr and the handles are not crossed, or if the context is Rtl and the handles
+     * are crossed, return true.
+     *
+     * In Ltr context, the start handle should point to the left, and the end handle should point to
+     * the right. However, in Rtl context or when handles are crossed, the start handle should point to
+     * the right, and the end handle should point to left.
+     */
+    private fun isHandleLtrDirection(
+        direction: ResolvedTextDirection,
+        areHandlesCrossed: Boolean
+    ): Boolean {
+        return direction == ResolvedTextDirection.Ltr && !areHandlesCrossed ||
+                direction == ResolvedTextDirection.Rtl && areHandlesCrossed
+    }
+
+    @Parcelize
+    private data class SaverData(val selection: Selection?) : Parcelable
+
+    companion object {
+        fun saver(
+            coroutineContext: CoroutineContext,
+            page: PageRenderer,
+            textToolbar: TextToolbar,
+            clipboardManager: ClipboardManager,
+            density: Density,
+        ): Saver<PageTextSelectionManager, *> = Saver(
+            save = { SaverData(it.selection.value) },
+            restore = {
+                PageTextSelectionManager(
+                    coroutineContext,
+                    page,
+                    textToolbar,
+                    clipboardManager,
+                    density,
+                    it.selection
+                )
+            }
+        )
+
+        private val HANDLE_WIDTH = 25.dp
+        private val HANDLE_HEIGHT = 25.dp
+    }
+}
 
 /**
  * Copied from Compose
@@ -213,7 +509,7 @@ private fun ensureAtLeastOneChar(
  * Information about the current Selection.
  */
 @Immutable
-@OptIn(ExperimentalTextApi::class)
+@Parcelize
 internal data class Selection(
     /**
      * Information about the start of the selection.
@@ -234,11 +530,12 @@ internal data class Selection(
     // But when selection happens across multiple widgets, this value needs more complicated
     // calculation. To avoid repeated calculation, making it as a flag is cheaper.
     val handlesCrossed: Boolean = false
-) {
+) : Parcelable {
     /**
      * Contains information about an anchor (start/end) of selection.
      */
     @Immutable
+    @Parcelize
     internal data class AnchorInfo(
         /**
          * Text direction of the character in selection edge.
@@ -249,7 +546,7 @@ internal data class Selection(
          * Character offset for the selection edge. This offset is within the page
          */
         val offset: Int,
-    )
+    ) : Parcelable
 
     /**
      * Returns the selection offset information as a [TextRange]
@@ -258,3 +555,58 @@ internal data class Selection(
         return TextRange(start.offset, end.offset)
     }
 }
+
+private suspend fun PointerInputScope.awaitLongPressOrCancellation(
+    initialDown: PointerInputChange
+): PointerInputChange? {
+    var longPress: PointerInputChange? = null
+    var currentDown = initialDown
+    val longPressTimeout = viewConfiguration.longPressTimeoutMillis
+    return try {
+        // wait for first tap up or long press
+        withTimeout(longPressTimeout) {
+            awaitPointerEventScope {
+                var finished = false
+                while (!finished) {
+                    val event = awaitPointerEvent(PointerEventPass.Main)
+                    if (event.changes.fastAll { it.changedToUpIgnoreConsumed() }) {
+                        // All pointers are up
+                        finished = true
+                    }
+
+                    if (
+                        event.changes.fastAny { it.consumed.downChange || it.isOutOfBounds(size) }
+                    ) {
+                        finished = true // Canceled
+                    }
+
+                    // Check for cancel by position consumption. We can look on the Final pass of
+                    // the existing pointer event because it comes after the Main pass we checked
+                    // above.
+                    val consumeCheck = awaitPointerEvent(PointerEventPass.Final)
+                    if (consumeCheck.changes.fastAny { it.positionChangeConsumed() }) {
+                        finished = true
+                    }
+                    if (!event.isPointerUp(currentDown.id)) {
+                        longPress = event.changes.firstOrNull { it.id == currentDown.id }
+                    } else {
+                        val newPressed = event.changes.fastFirstOrNull { it.pressed }
+                        if (newPressed != null) {
+                            currentDown = newPressed
+                            longPress = currentDown
+                        } else {
+                            // should technically never happen as we checked it above
+                            finished = true
+                        }
+                    }
+                }
+            }
+        }
+        null
+    } catch (_: TimeoutCancellationException) {
+        longPress ?: initialDown
+    }
+}
+
+private fun PointerEvent.isPointerUp(pointerId: PointerId): Boolean =
+    changes.firstOrNull { it.id == pointerId }?.pressed != true
