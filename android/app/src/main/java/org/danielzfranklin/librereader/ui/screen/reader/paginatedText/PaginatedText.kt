@@ -434,18 +434,6 @@ private fun Modifier.page(page: PageRenderer) = drawBehind {
     }
 }
 
-private fun Modifier.pageTurn(turn: State<Float>, pageWidthPx: Float, shadow: ShadowConfig) =
-    graphicsLayer {
-        val current = turn.value
-        if (current != 0f) {
-            translationX = -pageWidthPx * current
-
-            val shadowPx = shadow.elevation(current)
-            shadowElevation = shadowPx
-            shape = PageShape
-        }
-    }
-
 private data class ShadowConfig(
     val maxWidthPx: Float,
     val maxAtPercent: Float
