@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
@@ -39,7 +38,6 @@ fun ReaderScreen(bookId: BookID) {
 }
 
 @Composable
-@OptIn(ExperimentalCoroutinesApi::class)
 fun Pages(model: ReaderModel, book: ReaderModel.Book) {
     val initialPosition = PaginatedTextPosition(book.position.sectionIndex, book.position.charIndex)
     val epub = book.epub
