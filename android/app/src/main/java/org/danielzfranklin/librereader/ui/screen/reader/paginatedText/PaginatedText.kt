@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.State
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,13 +69,7 @@ fun PaginatedText(
             makeSection = makeSection
         )
 
-        val initialPagePosition = remember(initialPosition) {
-            PagePosition(
-                initialPosition.section,
-                renderer[initialPosition.section]!!.findPage(initialPosition.charIndex)!!.index.toFloat()
-            )
-        }
-        val position = rememberPositionState(initialPagePosition, renderer, onPosition)
+        val position = rememberPositionState(initialPosition, renderer, onPosition)
 
         Box(
             Modifier
@@ -170,7 +163,7 @@ private fun PaginatedSectionsPreview() {
             makeSection = { text }
         )
 
-        val animPosition = rememberPositionState(PagePosition(0, 0f), renderer, {})
+        val animPosition = rememberPositionState(PaginatedTextPosition(0, 0), renderer, {})
         val animScope = rememberCoroutineScope()
 
         PaginatedSections(animPosition.position, renderer)
@@ -218,12 +211,17 @@ private fun PaginatedSectionsPreview() {
 
 @Composable
 private fun rememberPositionState(
-    initialPosition: PagePosition,
+    initialPosition: PaginatedTextPosition,
     renderer: Renderer,
     onPosition: (PaginatedTextPosition) -> Unit
 ): SectionsAnimationState {
     return remember(initialPosition, renderer, onPosition) {
-        SectionsAnimationState(initialPosition, renderer, onPosition)
+        val initialPage = PagePosition(
+            initialPosition.section,
+            renderer[initialPosition.section]!!.findPage(initialPosition.charIndex)!!.index.toFloat()
+        )
+
+        SectionsAnimationState(initialPage, renderer, onPosition)
     }
 }
 
@@ -316,14 +314,15 @@ private class SectionsAnimationState constructor(
 
 @Composable
 private fun PaginatedSections(position: State<PagePosition>, renderer: Renderer) {
-    val currentSection = remember {
+    val currentSection = remember(renderer, position) {
         derivedStateOf {
             renderer[position.value.section]
                 ?: throw IllegalArgumentException("Position $position does not exist")
         }
     }
-    val nextSection = remember { derivedStateOf { renderer[position.value.section + 1] } }
-    val page = remember { derivedStateOf { position.value.page } }
+    val nextSection =
+        remember(renderer, position) { derivedStateOf { renderer[position.value.section + 1] } }
+    val page = remember(position) { derivedStateOf { position.value.page } }
 
     // If last page in the section is partly turned
     val next = nextSection.value
@@ -340,7 +339,8 @@ private fun PaginatedSections(position: State<PagePosition>, renderer: Renderer)
  */
 @Composable
 private fun PaginatedSection(renderer: SectionRenderer, position: State<Float>) {
-    val index = remember { derivedStateOf { floor(position.value).roundToInt() } }
+    val index =
+        remember(renderer, position) { derivedStateOf { floor(position.value).roundToInt() } }
     val selectionEnabled = snapshotFlow { position.value == index.value.toFloat() }
         .collectAsState(true)
 
@@ -362,21 +362,27 @@ private fun PaginatedSection(renderer: SectionRenderer, position: State<Float>) 
             Box(Modifier.fillMaxSize())
         }
     }) { (current, next), constraints ->
-        require(renderer.outerWidth.toPx().roundToInt() == constraints.maxWidth)
-        require(renderer.outerHeight.toPx().roundToInt() == constraints.maxHeight)
+        val width = constraints.maxWidth
+        val height = constraints.maxHeight
 
-        val placedCurrent = current.measure(constraints)
-        val placedNext = next.measure(constraints)
+        val pageConstraints = constraints.copy(
+            minWidth = width,
+            maxWidth = width,
+            minHeight = height,
+            maxHeight = height
+        )
+        val placedCurrent = current.measure(pageConstraints)
+        val placedNext = next.measure(pageConstraints)
 
-        layout(constraints.maxWidth, constraints.maxHeight) {
+        layout(width, height) {
             placedCurrent.placeWithLayer(0, 0, 1f) {
                 val turnPercent = position.value - index.value
-                translationX = turnPercent * -constraints.maxWidth.toFloat()
+                translationX = turnPercent * -width.toFloat()
                 shadowElevation = shadow.elevation(turnPercent)
                 shape = PageShape
             }
 
-            placedNext.place(0, 0)
+            placedNext.placeWithLayer(0, 0)
         }
     }
 }
@@ -404,7 +410,13 @@ private fun rememberSelectionManager(page: PageRenderer): PageTextSelectionManag
         context,
         page,
         textToolbar,
-        saver = PageTextSelectionManager.saver(context, page, textToolbar, clipboardManager, density)
+        saver = PageTextSelectionManager.saver(
+            context,
+            page,
+            textToolbar,
+            clipboardManager,
+            density
+        )
     ) { PageTextSelectionManager(context, page, textToolbar, clipboardManager, density) }
 }
 

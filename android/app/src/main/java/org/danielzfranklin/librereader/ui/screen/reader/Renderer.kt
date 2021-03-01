@@ -9,6 +9,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.core.util.lruCache
+import timber.log.Timber
 
 class Renderer(
     outerWidth: Dp,
@@ -51,25 +52,27 @@ fun rememberRenderer(
     cacheSize: Int = 2,
     maxSection: Int,
     makeSection: (Int) -> AnnotatedString,
-): Renderer = remember(
-    outerWidth,
-    outerHeight,
-    padding,
-    baseStyle,
-    density,
-    fontLoader,
-    maxSection,
-    makeSection
-) {
-    Renderer(
+): Renderer {
+    return remember(
         outerWidth,
         outerHeight,
         padding,
         baseStyle,
         density,
         fontLoader,
-        cacheSize,
         maxSection,
         makeSection
-    )
+    ) {
+        Renderer(
+            outerWidth,
+            outerHeight,
+            padding,
+            baseStyle,
+            density,
+            fontLoader,
+            cacheSize,
+            maxSection,
+            makeSection
+        )
+    }
 }
