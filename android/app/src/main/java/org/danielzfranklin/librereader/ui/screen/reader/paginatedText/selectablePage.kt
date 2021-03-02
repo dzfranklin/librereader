@@ -564,6 +564,7 @@ internal data class Selection(
     }
 }
 
+// Copied from Compose
 private suspend fun PointerInputScope.awaitLongPressOrCancellation(
     initialDown: PointerInputChange
 ): PointerInputChange? {
@@ -616,5 +617,6 @@ private suspend fun PointerInputScope.awaitLongPressOrCancellation(
     }
 }
 
+// Copied from Compose
 private fun PointerEvent.isPointerUp(pointerId: PointerId): Boolean =
     changes.firstOrNull { it.id == pointerId }?.pressed != true
