@@ -346,6 +346,12 @@ private fun PaginatedSections(position: State<PagePosition>, renderer: Renderer)
     }
 
     PaginatedSection(currentSection.value, page)
+
+    if (SHOW_DEBUG_INFO) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomEnd) {
+            Text(position.value.toString(), color = Color.Red)
+        }
+    }
 }
 
 /**
@@ -434,27 +440,17 @@ private fun rememberSelectionManager(page: PageRenderer): PageTextSelectionManag
     ) { PageTextSelectionManager(context, page, textToolbar, clipboardManager, density) }
 }
 
-private var drawsDebug = 0
-private const val SHOW_DEBUG_DRAW_COUNT = true
-private val drawsDebugPaint = if (SHOW_DEBUG_DRAW_COUNT) {
-    NativePaint().apply {
-        color = Color.Red.toArgb()
-        textSize = 100f
-        isFakeBoldText = true
-    }
-} else null
-
 private fun Modifier.page(page: PageRenderer) = drawBehind {
     drawIntoCanvas { canvas ->
         page.paint(canvas)
 
-        if (SHOW_DEBUG_DRAW_COUNT) {
+        if (SHOW_DEBUG_INFO) {
             drawsDebug++
             canvas.nativeCanvas.drawText(
                 drawsDebug.toString(),
                 size.width - 210f,
                 200f,
-                drawsDebugPaint!!
+                debugPaint!!
             )
         }
     }
@@ -477,6 +473,16 @@ private val PageShape = object : Shape {
         // Draw the top and bottom shadow outside the visible area
         Outline.Rectangle(Rect(Offset(0f, -100f), Size(size.width, size.height + 200f)))
 }
+
+private var drawsDebug = 0
+private const val SHOW_DEBUG_INFO = true
+private val debugPaint = if (SHOW_DEBUG_INFO) {
+    NativePaint().apply {
+        color = Color.Red.toArgb()
+        textSize = 100f
+        isFakeBoldText = true
+    }
+} else null
 
 @Composable
 private fun rememberAnnotatedStringPreview(): AnnotatedString {
