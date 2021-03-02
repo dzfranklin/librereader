@@ -156,7 +156,7 @@ private fun PaginatedSectionsPreview() {
             outerWidth = minWidth,
             outerHeight = minHeight,
             padding = 15.dp,
-            baseStyle = TextStyle(fontSize = 22.sp),
+            baseStyle = TextStyle(fontSize = 22.sp, background = Color.White),
             density = LocalDensity.current,
             fontLoader = LocalFontLoader.current,
             maxSection = 2,
