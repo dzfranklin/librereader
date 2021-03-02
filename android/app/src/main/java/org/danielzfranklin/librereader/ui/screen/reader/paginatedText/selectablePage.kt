@@ -8,6 +8,7 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Path
@@ -34,7 +35,7 @@ internal fun Modifier.selectablePageText(
     page: PageRenderer,
     enabled: State<Boolean>,
     manager: PageTextSelectionManager,
-) = if (!enabled.value) this then deselect(manager) else graphicsLayer().composed {
+) = if (!enabled.value) this then deselect(manager) else composed {
     // Based on Compose MultiWidgetSelectionDelegate, with many features we don't need stripped out
 
     val colors = LocalTextSelectionColors.current
@@ -64,17 +65,21 @@ internal fun Modifier.selectablePageText(
                 }
             }
         }
-    } then graphicsLayer().drawBehind {
-        val selection = manager.selection.value ?: return@drawBehind
+    } then drawWithCache {
+        val selection = manager.selection.value
+        val highlight = selection?.let { manager.computeHighlightPath(it) }
+        val startHandle = selection?.let { manager.computeHandlePath(it, true) }
+        val endHandle = selection?.let { manager.computeHandlePath(it, false) }
 
-        val highlight = manager.computeHighlightPath(selection)
-        drawPath(highlight, colors.backgroundColor)
-
-        val startHandle = manager.computeHandlePath(selection, true)
-        drawPath(startHandle, colors.handleColor)
-
-        val endHandle = manager.computeHandlePath(selection, false)
-        drawPath(endHandle, colors.handleColor)
+        onDrawBehind {
+            // TODO: Remove this line. Used to fix bug <https://issuetracker.google.com/issues/181589173>
+            manager.selection.value
+            if (selection != null) {
+                drawPath(highlight!!, colors.backgroundColor)
+                drawPath(startHandle!!, colors.handleColor)
+                drawPath(endHandle!!, colors.handleColor)
+            }
+        }
     }
 }
 
