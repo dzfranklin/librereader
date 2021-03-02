@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import org.danielzfranklin.librereader.R
 import org.danielzfranklin.librereader.ui.screen.reader.paginatedText.PageTextSelectionManager
 import org.danielzfranklin.librereader.ui.screen.reader.paginatedText.selectablePageText
+import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.round
 import kotlin.math.roundToInt
@@ -289,7 +290,8 @@ private class SectionsAnimationState constructor(
 
     suspend fun animateBy(
         delta: Float,
-        spec: AnimationSpec<Float> = spring(stiffness = 100f)
+        spec: AnimationSpec<Float> = spring(stiffness = 100f),
+        settleAfter: Boolean = true
     ) {
         _isAnimating.value = true
 
@@ -299,6 +301,8 @@ private class SectionsAnimationState constructor(
             prev = value
         }
 
+        if (settleAfter) settle()
+
         _isAnimating.value = false
     }
 
@@ -307,8 +311,18 @@ private class SectionsAnimationState constructor(
         animateBy(delta, spring(stiffness = Spring.StiffnessLow))
     }
 
+    private suspend fun settle() {
+        // Round up if we are very close to a page
+        val gap = _position.page.roundToInt() - _position.page
+        if (abs(gap) < SETTLE_WITHIN) {
+            animateBy(gap, settleAfter = false)
+            _position = _position.copy(page = round(_position.page))
+        }
+    }
+
     companion object {
         private const val NEARLY_ONE = 0.9999f
+        private const val SETTLE_WITHIN = 0.05f
     }
 }
 
