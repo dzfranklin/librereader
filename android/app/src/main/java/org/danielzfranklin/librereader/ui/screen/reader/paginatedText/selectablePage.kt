@@ -40,7 +40,7 @@ internal fun Modifier.selectablePageText(
     val colors = LocalTextSelectionColors.current
 
     pointerInput(page) {
-        while (true) {
+        forEachGesture {
             val down = awaitPointerEventScope { awaitFirstDown(requireUnconsumed = false) }
             val position = down.position.round()
             val inSelection = manager.selection.value != null
